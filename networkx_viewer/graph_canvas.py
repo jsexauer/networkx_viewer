@@ -157,7 +157,7 @@ class GraphCanvas(tk.Canvas):
         G.add_edges_from(self.dispG.edges())
         G.remove_edge(home_node, behind_node)
 
-        node_sets = nx.connected_components(G)
+        node_sets = list(nx.connected_components(G))
 
         if len(node_sets) == base_islands:
             # There is no radial path behind this node

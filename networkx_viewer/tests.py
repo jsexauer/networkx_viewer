@@ -1,5 +1,5 @@
 import unittest
-import mock
+from mock import patch
 import networkx as nx
 
 try:
@@ -7,7 +7,6 @@ try:
 except ImportError:
     import __init__ as nxv
 
-@mock.patch('tkMessageBox.showerror', lambda x=None,y=None: None)
 class TestGraphCanvas(unittest.TestCase):
     def setUp(self):
         # Create the graph for testing
@@ -153,15 +152,19 @@ class TestGraphCanvas(unittest.TestCase):
 
     def test_plot_path_error_no_node(self):
         self.a.clear()
-        self.a.plot_path('a','bad')
+        with patch('tkMessageBox.showerror') as errorMsgBox:
+            self.a.plot_path('a','bad')
 
         self.check_num_nodes_edges(0, 0)
+        self.assertTrue(errorMsgBox.called)
 
     def test_plot_path_error_no_path(self):
         self.a.clear()
-        self.a.plot_path('a','alone')
+        with patch('tkMessageBox.showerror') as errorMsgBox:
+            self.a.plot_path('a','alone')
 
         self.check_num_nodes_edges(0, 0)
+        self.assertTrue(errorMsgBox.called)
 
     def test_mark_node(self):
         a = self.a._find_disp_node('a')

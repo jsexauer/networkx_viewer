@@ -35,6 +35,6 @@ setup(name='networkx_viewer',
       zip_safe=False,
       setup_requires=['networkx>=1.8'],
       install_requires=[
-          'networkx>=1.8'
+          'networkx>=1.0'
       ],
       )
