@@ -1,4 +1,5 @@
 import unittest
+import mock
 import networkx as nx
 
 try:
@@ -6,6 +7,7 @@ try:
 except ImportError:
     import __init__ as nxv
 
+@mock.patch('tkMessageBox.showerror', lambda x=None,y=None: None)
 class TestGraphCanvas(unittest.TestCase):
     def setUp(self):
         # Create the graph for testing
