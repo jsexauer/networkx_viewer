@@ -129,7 +129,7 @@ class TestGraphCanvas(unittest.TestCase):
         home = self.a._find_disp_node('a')
         behind = self.a._find_disp_node('c')
 
-        with self.assertRaises(ValueError, self.a.hide_behind):
+        with self.assertRaises(ValueError):
             self.a.hide_behind(home, behind)
 
     def test_plot_path(self):
