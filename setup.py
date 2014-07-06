@@ -33,8 +33,8 @@ setup(name='networkx_viewer',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      setup_requires=['networkx>=1.0'],
+      setup_requires=['networkx>=1.4'],
       install_requires=[
-          'networkx>=1.0'
+          'networkx>=1.4'
       ],
       )
