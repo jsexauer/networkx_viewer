@@ -498,7 +498,5 @@ class GraphCanvas(tk.Canvas):
                                     "times" % data_node)
         return disp_node[0]
 
-    def create_layout(self, G, dim=2, k=None, pos=None, fixed=None,
-                      iterations=50, weight='weight', scale=1.0):
-        return nx.spring_layout(G, dim, k, pos, fixed, iterations,
-                                weight, scale)
+    def create_layout(self, G, pos=None, fixed=None, scale=1.0):
+        return nx.spring_layout(G, scale=scale)
