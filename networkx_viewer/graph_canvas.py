@@ -8,11 +8,18 @@ Author: Jason Sexauer
 Released under the GNU General Public License (GPL)
 """
 
-import Tkinter as tk
-import tkMessageBox as tkm
+try:
+    # Python 3
+    import tkinter as tk
+    import tkinter.messagebox as tkm
+except ImportError:
+    # Python 2
+    import Tkinter as tk
+    import tkMessageBox as tkm
+
 import networkx as nx
 
-from tokens import NodeToken, EdgeToken
+from networkx_viewer.tokens import NodeToken, EdgeToken
 
 class GraphCanvas(tk.Canvas):
     """Expandable GUI to plot a NetworkX Graph"""
@@ -243,7 +250,7 @@ class GraphCanvas(tk.Canvas):
         # Redraw any edges
         from_node = self._drag_data['item']
         from_xy = self._node_center(from_node)
-        for to_node, edge in self.dispG[from_node].iteritems():
+        for to_node, edge in self.dispG[from_node].items():
             to_xy = self._node_center(to_node)
             self.coords(edge['token_id'], (from_xy+to_xy))
     
@@ -303,7 +310,7 @@ class GraphCanvas(tk.Canvas):
     def grow_node(self, disp_node):
         data_node = self.dispG.node[disp_node]['dataG_id']
         existing_data_nodes = set([ v['dataG_id'] 
-                                    for k,v in self.dispG.node.iteritems() ])
+                                    for k,v in self.dispG.node.items() ])
         
         grow_graph = self._neighbors(data_node)
         
@@ -323,12 +330,12 @@ class GraphCanvas(tk.Canvas):
         scale = min(self.winfo_width(), self.winfo_height())*.66
         
         layout = self.create_layout(grow_graph,
-                                    pos=fixed, fixed=fixed.keys())
+                                    pos=fixed, fixed=list(fixed.keys()))
         
         (existx, existy) = self._node_center(disp_node)
         deltax = existx - layout[data_node][0]*scale
         deltay = existy - layout[data_node][1]*scale
-        for k in layout.keys():
+        for k in list(layout.keys()):
             layout[k] = [layout[k][0]*scale+deltax, layout[k][1]*scale+deltay]
             
         # Filter the graph to only include new edges

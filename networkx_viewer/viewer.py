@@ -1,9 +1,18 @@
-import Tkinter as tk
-import tkMessageBox as tkm
+try:
+    # Python 3
+    import tkinter as tk
+    import tkinter.messagebox as tkm
+except ImportError:
+    # Python 2
+    import Tkinter as tk
+    import tkMessageBox as tkm
+
+
+
 import networkx as nx
 
-from graph_canvas import GraphCanvas
-from tokens import TkPassthroughEdgeToken, TkPassthroughNodeToken
+from networkx_viewer.graph_canvas import GraphCanvas
+from networkx_viewer.tokens import TkPassthroughEdgeToken, TkPassthroughNodeToken
 
 
 class ViewerApp(tk.Tk):

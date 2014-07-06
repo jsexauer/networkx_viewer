@@ -1,4 +1,9 @@
-import Tkinter as tk
+try:
+    # Python 3
+    import tkinter as tk
+except ImportError:
+    # Python 2
+    import Tkinter as tk
 
 class NodeToken(tk.Canvas):
     def __init__(self, host_canvas, data, node_name):
@@ -97,19 +102,19 @@ class TkPassthroughNodeToken(NodeToken):
 
         # Modify marker using options from data
         cfg = self.itemconfig(self.marker)
-        for k,v in cfg.copy().iteritems():
+        for k,v in cfg.copy().items():
             cfg[k] = data.get(k, cfg[k][-1])
         self.itemconfig(self.marker, **cfg)
 
         # Modify the text label using options from data
         cfg = self.itemconfig(self.label)
-        for k,v in cfg.copy().iteritems():
+        for k,v in cfg.copy().items():
             cfg[k] = data.get('label_'+k, cfg[k][-1])
         self.itemconfig(self.label, **cfg)
 
         # Figure out how big we really need to be
         bbox = self.bbox(self.label)
-        bbox = map(lambda x: abs(x), bbox)
+        bbox = [abs(x) for x in bbox]
         br = ( max((bbox[0] + bbox[2]),20), max((bbox[1]+bbox[3]),20) )
 
         self.config(width=br[0], height=br[1]+7)

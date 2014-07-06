@@ -5,7 +5,7 @@ import networkx as nx
 try:
     import networkx_viewer as nxv
 except ImportError:
-    import __init__ as nxv
+    from . import __init__ as nxv
 
 class TestGraphCanvas(unittest.TestCase):
     def setUp(self):
