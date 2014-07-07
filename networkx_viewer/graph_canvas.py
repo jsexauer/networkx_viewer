@@ -506,5 +506,4 @@ class GraphCanvas(tk.Canvas):
         return disp_node[0]
 
     def create_layout(self, G, pos=None, fixed=None, scale=1.0):
-        from networkx import spring_layout
-        return spring_layout(G, scale=scale)
+        return nx.spring_layout(G, scale=scale)

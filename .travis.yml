@@ -23,3 +23,7 @@ matrix:
     env: NETWORKX_VERSION=1.8
   - python: "3.4"
     env: NETWORKX_VERSION=1.8
+  - python: "3.3"
+    env: NETWORKX_VERSION=1.4
+  - python: "3.4"
+    env: NETWORKX_VERSION=1.4
