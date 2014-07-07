@@ -1,6 +1,8 @@
 NetworkX Viewer
 ================
 
+![Build Status](https://travis-ci.org/jsexauer/networkx_viewer.svg?branch=master)
+
 Introduction
 ------------
 
