@@ -345,7 +345,7 @@ class GraphCanvas(tk.Canvas):
 
         # Remove any nodes which connected to only existing nodes (ie, they
         #  they connect to nothing else in grow_graph)
-        for n, degree in grow_graph.degree_iter():
+        for n, degree in grow_graph.copy().degree_iter():
             if degree == 0:
                 grow_graph.remove_node(n)
 

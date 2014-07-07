@@ -7,6 +7,15 @@ try:
 except ImportError:
     from . import __init__ as nxv
 
+import sys
+
+if sys.version_info > (3, 0):
+    # Python 3 patching
+    SHOWERROR_FUNC = 'tkinter.messagebox.showerror'
+else:
+    # Python 2
+    SHOWERROR_FUNC = 'tkMessageBox.showerror'
+
 class TestGraphCanvas(unittest.TestCase):
     def setUp(self):
         # Create the graph for testing
@@ -152,7 +161,7 @@ class TestGraphCanvas(unittest.TestCase):
 
     def test_plot_path_error_no_node(self):
         self.a.clear()
-        with patch('tkMessageBox.showerror') as errorMsgBox:
+        with patch(SHOWERROR_FUNC) as errorMsgBox:
             self.a.plot_path('a','bad')
 
         self.check_num_nodes_edges(0, 0)
@@ -160,7 +169,7 @@ class TestGraphCanvas(unittest.TestCase):
 
     def test_plot_path_error_no_path(self):
         self.a.clear()
-        with patch('tkMessageBox.showerror') as errorMsgBox:
+        with patch(SHOWERROR_FUNC) as errorMsgBox:
             self.a.plot_path('a','alone')
 
         self.check_num_nodes_edges(0, 0)
@@ -250,7 +259,8 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         cfg = token.itemconfig(token.marker)
 
         self.assertEqual(cfg['fill'][-1], 'white')
-        self.assertEqual(cfg['dash'][-1], ('2','2'))
+        chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
+        self.assert_(chk)
 
     def test_node_label_passthrough(self):
         node = self.a._find_disp_node(2)
@@ -270,7 +280,8 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         token_id = self.a.dispG.edge[a][c]['token_id']
         cfg = self.a.itemconfig(token_id)
 
-        self.assertEqual(cfg['dash'][-1], ('2','2'))
+        chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
+        self.assert_(chk)
 
         # Test edge out-c
         token = self.a.dispG.edge[out][c]['token']
