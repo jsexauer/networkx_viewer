@@ -506,4 +506,5 @@ class GraphCanvas(tk.Canvas):
         return disp_node[0]
 
     def create_layout(self, G, pos=None, fixed=None, scale=1.0):
-        return nx.spring_layout(G, scale=scale)
+        # Alias of spring_layout
+        return nx.fruchterman_reingold_layout(G, scale=scale)

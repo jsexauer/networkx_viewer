@@ -7,12 +7,19 @@ python:
 env:
  - NETWORKX_VERSION=1.9
  - NETWORKX_VERSION=1.8
- - NETWORKX_VERSION=1.7
- - NETWORKX_VERSION=1.6
- - NETWORKX_VERSION=1.5
+#- NETWORKX_VERSION=1.7
+#- NETWORKX_VERSION=1.6
+#- NETWORKX_VERSION=1.5
  - NETWORKX_VERSION=1.4
 install:
  - pip install networkx==$NETWORKX_VERSION
  - python setup.py install
 script:
  - xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" python ./networkx_viewer/tests.py
+
+matrix:
+ exclude:
+  - python: "3.3"
+    env: NETWORKX_VERSION=1.8
+  - python: "3.4"
+    env: NETWORKX_VERSION=1.8
