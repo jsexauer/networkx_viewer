@@ -7,6 +7,7 @@ Author: Jason Sexauer
 
 Released under the GNU General Public License (GPL)
 """
+from math import atan2, pi, cos, sin
 
 try:
     # Python 3
@@ -93,7 +94,6 @@ class GraphCanvas(tk.Canvas):
         self.bind('<B1-Motion>', self.onPanMotion)
         
         self.bind_all('<MouseWheel>', self.onZoon)
-        
 
     def _draw_edge(self, u, v):
         """Draw edge.  u and v are from self.dataG"""
@@ -103,15 +103,17 @@ class GraphCanvas(tk.Canvas):
         to_disp = self._find_disp_node(v)
         
         token = self._EdgeTokenClass(self.dataG.edge[u][v])
-        self.dispG.add_edge(frm_disp, to_disp, {'dataG_id': (u,v), 
+        self.dispG.add_edge(frm_disp, to_disp, {'dataG_id': (u,v),
+                                                'dispG_frm': frm_disp,
                                                 'token': token})
-        
-        frmXY = self._node_center(frm_disp)
-        toXY = self._node_center(to_disp)
+
+        x1,y1 = self._node_center(frm_disp)
+        x2,y2 = self._node_center(to_disp)
+        xa,ya = self._spline_center(x1,y1,x2,y2,77)
+
         cfg = token.render()
-        l = self.create_line(frmXY+toXY, tags='edge', **cfg)
+        l = self.create_line(x1,y1,xa,ya,x2,y2, tags='edge', smooth=True, **cfg)
         self.dispG[frm_disp][to_disp]['token_id'] = l
-        
 
     def _draw_node(self, coord, data_node):
         """Create a token for the data_node at the given coordinater"""
@@ -135,6 +137,18 @@ class GraphCanvas(tk.Canvas):
         """Calcualte the center of a given node"""
         b = self.bbox(item_id)
         return ( (b[0]+b[2])/2, (b[1]+b[3])/2 )        
+
+    def _spline_center(self, x1, y1, x2, y2, m):
+        """Given the coordinate for the end points of a spline, calcuate
+        the mipdoint extruded out m pixles"""
+        a = (x2 + x1)/2
+        b = (y2 + y1)/2
+        beta = (pi/2) - atan2((y2-y1), (x2-x1))
+
+        xa = a - m*cos(beta)
+        ya = b + m*sin(beta)
+        return (xa, ya)
+
 
     def _neighbors(self, node, levels=1, graph=None):
         """Return graph of neighbors around node in graph (default: self.dataG)
@@ -213,7 +227,14 @@ class GraphCanvas(tk.Canvas):
         for to_node, from_node, data in self.dispG.edges_iter(data=True):
             from_xy = self._node_center(from_node)
             to_xy = self._node_center(to_node)
-            self.coords(data['token_id'], (from_xy+to_xy))        
+            if data['dispG_frm'] != from_node:
+                # Flip!
+                a = from_xy[:]
+                from_xy = to_xy[:]
+                to_xy = a[:]
+            spline_xy = self._spline_center(*from_xy+to_xy+(77,))
+
+            self.coords(data['token_id'], (from_xy+spline_xy+to_xy))
             
         
 
@@ -250,9 +271,17 @@ class GraphCanvas(tk.Canvas):
         # Redraw any edges
         from_node = self._drag_data['item']
         from_xy = self._node_center(from_node)
-        for to_node, edge in self.dispG[from_node].items():
+        for _, to_node, edge in self.dispG.edges_iter(from_node, data=True):
             to_xy = self._node_center(to_node)
-            self.coords(edge['token_id'], (from_xy+to_xy))
+            if edge['dispG_frm'] != from_node:
+                # Flip!
+                print edge
+                print from_node, to_node
+                a = from_xy+tuple()
+                from_xy = to_xy+tuple()
+                to_xy = a+tuple()
+            spline_xy = self._spline_center(*from_xy+to_xy+(77,))
+            self.coords(edge['token_id'], (from_xy+spline_xy+to_xy))
     
     def onTokenRightClick(self, event):
         item = self._get_id(event)
