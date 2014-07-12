@@ -46,7 +46,7 @@ class GraphCanvas(tk.Canvas):
 
         # Graph representting what subsect of the data graph currently being
         #  displayed.
-        self.dispG = nx.Graph()  
+        self.dispG = nx.MultiGraph()
 
         # this data is used to keep track of an 
         # item being dragged
@@ -96,24 +96,44 @@ class GraphCanvas(tk.Canvas):
         self.bind_all('<MouseWheel>', self.onZoon)
 
     def _draw_edge(self, u, v):
-        """Draw edge.  u and v are from self.dataG"""
+        """Draw edge(s).  u and v are from self.dataG"""
 
-        # Find display nodes accoiated with these data nodes
+        # Find display nodes asoccoiated with these data nodes
         frm_disp = self._find_disp_node(u) 
         to_disp = self._find_disp_node(v)
-        
-        token = self._EdgeTokenClass(self.dataG.edge[u][v])
-        self.dispG.add_edge(frm_disp, to_disp, {'dataG_id': (u,v),
+
+        if isinstance(self.dataG, nx.MultiGraph):
+            edges = self.dataG.edge[u][v]
+        elif isinstance(self.dataG, nx.Graph):
+            edges = {0: self.dataG.edge[u][v]}
+        else:
+            raise NotImplementedError('Data Graph Type not Supported')
+
+        # Figure out edge arc distance multiplier
+        if len(edges) == 1:
+            m = 0
+        else:
+            print 'Multiple edges'
+            m = 15
+
+        for key, data in edges.iteritems():
+            token = self._EdgeTokenClass(data)
+            self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': (u,v),
                                                 'dispG_frm': frm_disp,
-                                                'token': token})
+                                                'token': token,
+                                                'm': m})
+            x1,y1 = self._node_center(frm_disp)
+            x2,y2 = self._node_center(to_disp)
+            xa,ya = self._spline_center(x1,y1,x2,y2,m)
 
-        x1,y1 = self._node_center(frm_disp)
-        x2,y2 = self._node_center(to_disp)
-        xa,ya = self._spline_center(x1,y1,x2,y2,77)
+            cfg = token.render()
+            l = self.create_line(x1,y1,xa,ya,x2,y2, tags='edge', smooth=True, **cfg)
+            self.dispG[frm_disp][to_disp][key]['token_id'] = l
 
-        cfg = token.render()
-        l = self.create_line(x1,y1,xa,ya,x2,y2, tags='edge', smooth=True, **cfg)
-        self.dispG[frm_disp][to_disp]['token_id'] = l
+            if m > 0:
+                m = -m # Flip sides
+            else:
+                m = -(m+m)  # Go next increment out
 
     def _draw_node(self, coord, data_node):
         """Create a token for the data_node at the given coordinater"""
@@ -232,7 +252,7 @@ class GraphCanvas(tk.Canvas):
                 a = from_xy[:]
                 from_xy = to_xy[:]
                 to_xy = a[:]
-            spline_xy = self._spline_center(*from_xy+to_xy+(77,))
+            spline_xy = self._spline_center(*from_xy+to_xy+(data['m'],))
 
             self.coords(data['token_id'], (from_xy+spline_xy+to_xy))
             
@@ -275,13 +295,11 @@ class GraphCanvas(tk.Canvas):
             to_xy = self._node_center(to_node)
             if edge['dispG_frm'] != from_node:
                 # Flip!
-                print edge
-                print from_node, to_node
-                a = from_xy+tuple()
-                from_xy = to_xy+tuple()
-                to_xy = a+tuple()
-            spline_xy = self._spline_center(*from_xy+to_xy+(77,))
-            self.coords(edge['token_id'], (from_xy+spline_xy+to_xy))
+                spline_xy = self._spline_center(*to_xy+from_xy+(edge['m'],))
+                self.coords(edge['token_id'], (to_xy+spline_xy+from_xy))
+            else:
+                spline_xy = self._spline_center(*from_xy+to_xy+(edge['m'],))
+                self.coords(edge['token_id'], (from_xy+spline_xy+to_xy))
     
     def onTokenRightClick(self, event):
         item = self._get_id(event)
@@ -387,7 +405,7 @@ class GraphCanvas(tk.Canvas):
             if n in existing_data_nodes: continue
             self._draw_node(layout[n], n)
         
-        for n, m in grow_graph.edges():
+        for n, m in set(grow_graph.edges()):
             if (n in existing_data_nodes) and (m in existing_data_nodes):
                 continue
             
@@ -417,12 +435,12 @@ class GraphCanvas(tk.Canvas):
 
     def onEdgeRightClick(self, event):
         item = self._get_id(event, 'edge')
-        for u,v,d in self.dispG.edges_iter(data=True):
+        for u,v,k,d in self.dispG.edges_iter(key=True, data=True):
             if d['token_id'] == item:
                 break
         
         popup = tk.Menu(self, tearoff=0)
-        popup.add_command(label='Mark', command=lambda: self.mark_edge(u,v))  
+        popup.add_command(label='Mark', command=lambda: self.mark_edge(u,v,k))
                               
         try:
             popup.post(event.x_root, event.y_root)
@@ -442,9 +460,9 @@ class GraphCanvas(tk.Canvas):
         self.delete(edge_id)
         self._graph_changed()
     
-    def mark_edge(self, disp_u, disp_v):
-        token = self.dispG[disp_u][disp_v]['token']
-        token_id = self.dispG[disp_u][disp_v]['token_id']
+    def mark_edge(self, disp_u, disp_v, key):
+        token = self.dispG[disp_u][disp_v][key]['token']
+        token_id = self.dispG[disp_u][disp_v][key]['token_id']
         
         cfg = token.mark()
         self.itemconfig(token_id, **cfg)
@@ -481,7 +499,8 @@ class GraphCanvas(tk.Canvas):
             for u, v in zip(path[:-1], path[1:]):
                 u_disp = self._find_disp_node(u)
                 v_disp = self._find_disp_node(v)
-                self.mark_edge(u_disp, v_disp)
+                for key, value in self.dispG.edge[u_disp][v_disp].items():
+                    self.mark_edge(u_disp, v_disp, key)
         
         
         
@@ -501,7 +520,7 @@ class GraphCanvas(tk.Canvas):
             self._draw_node((scale/2, scale/2), graph.nodes()[0])
 
         # Create edges
-        for frm, to in graph.edges():
+        for frm, to in set(graph.edges()):
             self._draw_edge(frm, to)
         
         self._graph_changed()

@@ -191,15 +191,15 @@ class TestGraphCanvas(unittest.TestCase):
         c = self.a._find_disp_node('c')
         out = self.a._find_disp_node('out')
 
-        token = self.a.dispG.edge[c][out]['token']
-        self.a.mark_edge(c, out)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out]['token_id'])
+        token = self.a.dispG.edge[c][out][0]['token']
+        self.a.mark_edge(c, out, 0)
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
-        self.a.mark_edge(c, out)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out]['token_id'])
+        self.a.mark_edge(c, out, 0)
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '1.0')
 
@@ -240,16 +240,16 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         c = self.a._find_disp_node('c')
         out = self.a._find_disp_node('out')
 
-        token = self.a.dispG.edge[c][out]['token']
+        token = self.a.dispG.edge[c][out][0]['token']
 
-        self.a.mark_edge(c, out)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out]['token_id'])
+        self.a.mark_edge(c, out, 0)
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
-        self.a.mark_edge(c, out)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out]['token_id'])
+        self.a.mark_edge(c, out, 0)
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '3.0')
 
@@ -276,20 +276,65 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         out = self.a._find_disp_node('out')
 
         # Test edge a-c
-        token = self.a.dispG.edge[a][c]['token']
-        token_id = self.a.dispG.edge[a][c]['token_id']
+        token = self.a.dispG.edge[a][c][0]['token']
+        token_id = self.a.dispG.edge[a][c][0]['token_id']
         cfg = self.a.itemconfig(token_id)
 
         chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
         self.assert_(chk)
 
         # Test edge out-c
-        token = self.a.dispG.edge[out][c]['token']
-        token_id = self.a.dispG.edge[out][c]['token_id']
+        token = self.a.dispG.edge[out][c][0]['token']
+        token_id = self.a.dispG.edge[out][c][0]['token_id']
         cfg = self.a.itemconfig(token_id)
 
         self.assertEqual(cfg['fill'][-1], 'red')
         self.assertEqual(cfg['width'][-1], '3.0')
+
+class TestGraphCanvasMultiGraph(TestGraphCanvas):
+    def setUp(self):
+        super(TestGraphCanvasMultiGraph, self).setUp()
+
+        # Add in some extra edges
+        G = nx.MultiGraph(self.input_G)
+        G.add_edge('a','c')
+
+        G.add_edge('out',12)
+        G.add_edge('out',12)
+        G.add_edge('out',12)
+        self.input_G = G.copy()
+
+        # Viewer under test
+        self.a = nxv.GraphCanvas(G)
+
+    def check_num_nodes_edges(self, number_of_nodes, number_of_edges):
+        # If we're currently displaying any of the node-pairs with
+        #  multiple edges, we'll need to add the number of edges observed
+
+        try:
+            self.a._find_disp_node('a')
+            self.a._find_disp_node('c')
+        except ValueError:
+            # Edge a-c not displayed
+            pass
+        else:
+            # Edge a-c dispayed.  We added 1 edge in self.setUp
+            number_of_edges += 1
+
+        try:
+            self.a._find_disp_node('out')
+            self.a._find_disp_node(12)
+        except ValueError:
+            # Edge out-12 not displayed
+            pass
+        else:
+            # Edge out-12 dispayed.  We added 3 edges in self.setUp
+            number_of_edges += 3
+
+
+        return super(TestGraphCanvasMultiGraph,
+                self).check_num_nodes_edges(number_of_nodes, number_of_edges)
+
 
 if __name__ == '__main__':
     unittest.main()
