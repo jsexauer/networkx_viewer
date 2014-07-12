@@ -113,10 +113,9 @@ class GraphCanvas(tk.Canvas):
         if len(edges) == 1:
             m = 0
         else:
-            print 'Multiple edges'
             m = 15
 
-        for key, data in edges.iteritems():
+        for key, data in edges.items():
             token = self._EdgeTokenClass(data)
             self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': (u,v),
                                                 'dispG_frm': frm_disp,
