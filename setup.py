@@ -2,6 +2,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 # python setup.py check
+# python.exe setup.py --long-description | rst2html.py > dummy.html
 
 # To upldate to PyPI test server
 #   http://peterdowns.com/posts/first-time-with-pypi.html
@@ -14,10 +15,32 @@ import sys, os
 
 from networkx_viewer import __version__ as version
 
+long_desc = """
+NetworkX Viewer provides a basic interactive GUI to view
+`networkx <https://networkx.github.io/>`_ graphs.  In addition to standard
+plotting and layout features as found natively in networkx, the GUI allows
+you to:
+
+  - Drag nodes around to tune the default layout
+  - Show and hide nodes
+  - Pan and zoom
+  - Display nodes only within a certain number of hops ("levels") of
+    a "home node"
+  - Display and highlight the shortest path between two nodes.  Nodes
+    around the path can also be displayed within a settable number of
+    levels
+  - Use attributes stored in the graph's node and edge dictionaries to
+    customize the appearance of the node and edge tokens in the GUI
+  - Mark nodes and edges for reference
+  - Support for both `nx.Graph` and `nx.MultiGraph`
+
+See https://github.com/jsexauer/networkx_viewer for more details
+"""
+
 setup(name='networkx_viewer',
       version=version,
       description="Interactive viewer for networkx graphs.",
-      long_description=open('README.md').read(),
+      long_description=long_desc,
       classifiers=[
           'Development Status :: 4 - Beta',
           'Topic :: Scientific/Engineering :: Mathematics',

@@ -33,11 +33,12 @@ app = Viewer(G, home_node='a', levels=2)
 app.mainloop()
 
 ### Example 2 ###
-G = nx.Graph()
+G = nx.MultiGraph()
 G.add_edge('a','b')
 G.add_edge('b','c')
-G.add_edge('c','a',{'fill':'green'})
+G.add_edge('c','a',0,{'fill':'green'})
 G.add_edge('c','d')
+G.add_edge('c','d',1,{'dash':(2,2)})
 G.node['a']['outline'] = 'blue'
 G.node['d']['label_fill'] = 'red'
 

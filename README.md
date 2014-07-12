@@ -1,7 +1,7 @@
 NetworkX Viewer
 ================
 
-![Build Status](https://travis-ci.org/jsexauer/networkx_viewer.svg?branch=master)
+[![Build Status](https://travis-ci.org/jsexauer/networkx_viewer.svg?branch=master)](https://travis-ci.org/jsexauer/networkx_viewer)
 
 Introduction
 ------------
@@ -22,17 +22,19 @@ you to:
   - Use attributes stored in the graph's node and edge dictionaries to
     customize the appearance of the node and edge tokens in the GUI
   - Mark nodes and edges for reference
+  - Support for both `nx.Graph` and `nx.MultiGraph`
 
 A typical usage would be:
 ```python
 import networkx as nx
 from networkx_viewer import Viewer
 
-G = nx.Graph()
+G = nx.MultiGraph()
 G.add_edge('a','b')
 G.add_edge('b','c')
-G.add_edge('c','a',{'fill':'green'})
+G.add_edge('c','a',0,{'fill':'green'})
 G.add_edge('c','d')
+G.add_edge('c','d',1,{'dash':(2,2)})
 G.node['a']['outline'] = 'blue'
 G.node['d']['label_fill'] = 'red'
 
@@ -42,13 +44,25 @@ app.mainloop()
 
 The result will be:
 
-![NetworkX Viewer Window](http://s8.postimg.org/k130sbsut/networkx_viewer.png)
+![NetworkX Viewer Window](screenshot.png)
+
+Installation
+------------
+
+NetworkX Viewer is hosted on PyPI and can be installed by simply doing the
+following.
+```
+pip install networkx_viewer
+```
+
+NetworkX Viewer requires NetworkX version 1.4 or greater.
+
 
 Using the GUI
 -------------
 The default layout for the nodes is to use `nx.spring_layout`.  While this
-layout is pretty good, it is not perfect.  The GUI supports standard features
-like rearanging the nodes, panning, and zooming.
+layout is pretty good, it is not perfect, so the GUI supports standard features
+like rearranging the nodes, panning, and zooming.
 
 By default, the viewer will display the entire graph on initialization.
 However, most of the power in the GUI comes in showing a subset of the graph.
@@ -78,7 +92,7 @@ from the node(s) to display.
 Using the Tk Pass-through
 -------------------------
 If the data dictionary stored in the graph for an edge or node contains a key
-that can be used by Tk, the token will be customized as such.  Specifcially,
+that can be used by Tk, the token will be customized as such.  Specifically,
 
   - If a node contains a key used to configure
     [Tkinter.Canvas.create_oval][1], it will be used to customize the node's
