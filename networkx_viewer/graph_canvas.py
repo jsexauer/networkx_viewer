@@ -639,7 +639,11 @@ class GraphCanvas(tk.Canvas):
 
         A=nx.to_numpy_matrix(G)
         nnodes,_ = A.shape
-        k=0.66/np.sqrt(nnodes)
+        # I've found you want to occupy about a two-thirds of the window size
+        if fixed is not None:
+            k=(min(self.winfo_width(), self.winfo_height())*.66)/np.sqrt(nnodes)
+        else:
+            k = None
 
         # Alternate k, for when vieweing the whole graph, not a subset
         #k=dom_size/np.sqrt(nnodes)
@@ -648,6 +652,7 @@ class GraphCanvas(tk.Canvas):
         if fixed is None:
             # Only rescale non fixed layouts
             pos= nx.layout._rescale_layout(pos,scale=scale)
+
 
         return dict(zip(G,pos))
 
