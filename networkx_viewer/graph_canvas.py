@@ -8,8 +8,7 @@ Author: Jason Sexauer
 Released under the GNU General Public License (GPL)
 """
 from math import atan2, pi, cos, sin
-from compiler.ast import flatten
-
+import collections
 try:
     # Python 3
     import tkinter as tk
@@ -716,7 +715,13 @@ class GraphCanvas(tk.Canvas):
             ###pos=_rescale_layout(pos)
         return pos
 
-
+def flatten(l):
+    for el in l:
+        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+            for sub in flatten(el):
+                yield sub
+        else:
+            yield el
 
 
 
