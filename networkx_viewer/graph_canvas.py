@@ -8,6 +8,7 @@ Author: Jason Sexauer
 Released under the GNU General Public License (GPL)
 """
 from math import atan2, pi, cos, sin
+from compiler.ast import flatten
 
 try:
     # Python 3
@@ -368,21 +369,23 @@ class GraphCanvas(tk.Canvas):
         grow_graph = self.dataG.subgraph(nodes)
         
         # Build layout considering existing nodes and 
-        #  augement to center around the home node (ie, "disp_node")
+        #  argument to center around the home node (ie, "disp_node")
         fixed = {}
         for n,d in self.dispG.nodes_iter(data=True):
             fixed[d['dataG_id']] = self.coords(n)
-        
-        scale = min(self.winfo_width(), self.winfo_height())*.66
-        
+
         layout = self.create_layout(grow_graph,
                                     pos=fixed, fixed=list(fixed.keys()))
-        
+        ##for k in list(layout.keys()):
+        ##    layout[k] = [layout[k][0]*scale, layout[k][1]*scale]
+        # Recenter around existing node
         (existx, existy) = self._node_center(disp_node)
-        deltax = existx - layout[data_node][0]*scale
-        deltay = existy - layout[data_node][1]*scale
+        deltax = existx - layout[data_node][0]
+        deltay = existy - layout[data_node][1]
         for k in list(layout.keys()):
-            layout[k] = [layout[k][0]*scale+deltax, layout[k][1]*scale+deltay]
+            layout[k] = [layout[k][0]+deltax, layout[k][1]+deltay]
+        
+        
             
         # Filter the graph to only include new edges
         for n,m in grow_graph.copy().edges_iter():
@@ -394,7 +397,7 @@ class GraphCanvas(tk.Canvas):
         for n, degree in grow_graph.copy().degree_iter():
             if degree == 0:
                 grow_graph.remove_node(n)
-
+                             
         if len(grow_graph.nodes()) == 0:
             # No new nodes to add
             return
@@ -552,5 +555,174 @@ class GraphCanvas(tk.Canvas):
                                     "times" % data_node)
         return disp_node[0]
 
+#    def create_layout(self, G, pos=None, fixed=None, scale=1.0):
+#        return nx.spring_layout(G, scale=scale)
+
     def create_layout(self, G, pos=None, fixed=None, scale=1.0):
-        return nx.spring_layout(G, scale=scale)
+        """Position nodes using Fruchterman-Reingold force-directed algorithm. 
+
+        Parameters
+        ----------
+        G : NetworkX graph
+    
+        dim : int
+           Dimension of layout
+    
+        k : float (default=None)
+           Optimal distance between nodes.  If None the distance is set to
+           1/sqrt(n) where n is the number of nodes.  Increase this value
+           to move nodes farther apart.
+    
+    
+        pos : dict or None  optional (default=None)
+           Initial positions for nodes as a dictionary with node as keys
+           and values as a list or tuple.  If None, then nuse random initial
+           positions.
+    
+        fixed : list or None  optional (default=None)
+          Nodes to keep fixed at initial position.
+    
+        iterations : int  optional (default=50)
+           Number of iterations of spring-force relaxation
+    
+        weight : string or None   optional (default='weight')
+            The edge attribute that holds the numerical value used for
+            the edge weight.  If None, then all edge weights are 1.
+    
+        scale : float (default=1.0)
+            Scale factor for positions. The nodes are positioned 
+            in a box of size [0,scale] x [0,scale].  
+    
+    
+        Returns
+        -------
+        dict :
+           A dictionary of positions keyed by node
+    
+        Examples
+        --------
+        >>> G=nx.path_graph(4)
+        >>> pos=nx.spring_layout(G)
+    
+        # The same using longer function name
+        >>> pos=nx.fruchterman_reingold_layout(G)
+        """
+        # This is a modification of the networkx.layout library's
+        #  fruchterman_reingold_layout to work well with fixed positions
+        #  and large inital positions (not near 1.0).  This involved
+        #  modification to what the optimal "k" is and the removal of
+        #  the resize when fixed is passed
+        dim = 2
+        
+        try:
+            import numpy as np
+        except ImportError:
+            raise ImportError("fruchterman_reingold_layout() requires numpy: http://scipy.org/ ")
+        if fixed is not None:
+            nfixed=dict(zip(G,range(len(G))))
+            fixed=np.asarray([nfixed[v] for v in fixed])
+    
+        if pos is not None:
+            # Determine size of exisiting domain
+            dom_size = max(flatten(pos.values()))
+            pos_arr=np.asarray(np.random.random((len(G),dim)))*dom_size
+            for i,n in enumerate(G):
+                if n in pos:
+                    pos_arr[i]=np.asarray(pos[n])
+        else:
+            pos_arr=None
+            dom_size = 1.0
+    
+        if len(G)==0:
+            return {}
+        if len(G)==1:
+            return {G.nodes()[0]:(1,)*dim} 
+
+        A=nx.to_numpy_matrix(G)
+        nnodes,_ = A.shape
+        # I've found you want to occupy about a two-thirds of the window size
+        k=(min(self.winfo_width(), self.winfo_height())*.66)/np.sqrt(nnodes)
+
+        # Alternate k, for when vieweing the whole graph, not a subset
+        #k=dom_size/np.sqrt(nnodes)
+        pos=self._fruchterman_reingold(A,dim,k,pos_arr,fixed)
+        
+        if fixed is None:
+            # Only rescale non fixed layouts
+            pos= nx.layout._rescale_layout(pos,scale=scale)
+
+        return dict(zip(G,pos))
+
+    def _fruchterman_reingold(self, A, dim=2, k=None, pos=None, fixed=None, 
+                              iterations=50):
+        # Position nodes in adjacency matrix A using Fruchterman-Reingold
+        # Entry point for NetworkX graph is fruchterman_reingold_layout()
+        try:
+            import numpy as np
+        except ImportError:
+            raise ImportError("_fruchterman_reingold() requires numpy: http://scipy.org/ ")
+    
+        try:
+            nnodes,_=A.shape
+        except AttributeError:
+            raise nx.NetworkXError(
+                "fruchterman_reingold() takes an adjacency matrix as input")
+    
+        A=np.asarray(A) # make sure we have an array instead of a matrix
+    
+        if pos==None:
+            # random initial positions
+            pos=np.asarray(np.random.random((nnodes,dim)),dtype=A.dtype)
+        else:
+            # make sure positions are of same type as matrix
+            pos=pos.astype(A.dtype)
+    
+        # optimal distance between nodes
+        if k is None:
+            k=np.sqrt(1.0/nnodes)
+        # the initial "temperature"  is about .1 of domain area (=1x1)
+        # this is the largest step allowed in the dynamics.
+        # Modified to actually detect for domain area
+        t = max(max(pos.T[0]) - min(pos.T[0]), max(pos.T[1]) - min(pos.T[1]))*0.1
+        # simple cooling scheme.
+        # linearly step down by dt on each iteration so last iteration is size dt.
+        dt=t/float(iterations+1)
+        delta = np.zeros((pos.shape[0],pos.shape[0],pos.shape[1]),dtype=A.dtype)
+        # the inscrutable (but fast) version
+        # this is still O(V^2)
+        # could use multilevel methods to speed this up significantly
+        for iteration in range(iterations):
+            # matrix of difference between points
+            for i in range(pos.shape[1]):
+                delta[:,:,i]= pos[:,i,None]-pos[:,i]
+            # distance between points
+            distance=np.sqrt((delta**2).sum(axis=-1))
+            # enforce minimum distance of 0.01
+            distance=np.where(distance<0.01,0.01,distance)
+            # displacement "force"
+            displacement=np.transpose(np.transpose(delta)*\
+                                      (k*k/distance**2-A*distance/k))\
+                                      .sum(axis=1)
+            # update positions
+            length=np.sqrt((displacement**2).sum(axis=1))
+            length=np.where(length<0.01,0.1,length)
+            delta_pos=np.transpose(np.transpose(displacement)*t/length)
+            if fixed is not None:
+                # don't change positions of fixed nodes
+                delta_pos[fixed]=0.0
+            pos+=delta_pos
+            # cool temperature
+            t-=dt
+            ###pos=_rescale_layout(pos)
+        return pos
+
+
+
+
+
+
+
+
+
+
+
