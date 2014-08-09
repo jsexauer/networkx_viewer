@@ -639,8 +639,7 @@ class GraphCanvas(tk.Canvas):
 
         A=nx.to_numpy_matrix(G)
         nnodes,_ = A.shape
-        # I've found you want to occupy about a two-thirds of the window size
-        k=(min(self.winfo_width(), self.winfo_height())*.66)/np.sqrt(nnodes)
+        k=0.66/np.sqrt(nnodes)
 
         # Alternate k, for when vieweing the whole graph, not a subset
         #k=dom_size/np.sqrt(nnodes)
