@@ -716,8 +716,13 @@ class GraphCanvas(tk.Canvas):
         return pos
 
 def flatten(l):
+    try:
+        bs = basestring
+    except NameError:
+        # Py3k
+        bs = str
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+        if isinstance(el, collections.Iterable) and not isinstance(el, bs):
             for sub in flatten(el):
                 yield sub
         else:
