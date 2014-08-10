@@ -86,7 +86,8 @@ class GraphCanvas(tk.Canvas):
         self.tag_bind('node', '<ButtonPress-1>', self.onNodeButtonPress)
         self.tag_bind('node', '<ButtonRelease-1>', self.onNodeButtonRelease)
         self.tag_bind('node', '<B1-Motion>', self.onNodeMotion)
-        
+
+        self.tag_bind('edge', '<Button-1>', self.onEdgeClick)
         self.tag_bind('edge', '<Button-3>', self.onEdgeRightClick)
 
         self.bind('<ButtonPress-1>', self.onPanStart)
@@ -117,7 +118,11 @@ class GraphCanvas(tk.Canvas):
 
         for key, data in edges.items():
             token = self._EdgeTokenClass(data)
-            self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': (u,v),
+            if isinstance(self.dataG, nx.MultiGraph):
+                dataG_id = (u,v)
+            elif isinstance(self.dataG, nx.Graph):
+                dataG_id = (u,v,key)
+            self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': dataG_id,
                                                 'dispG_frm': frm_disp,
                                                 'token': token,
                                                 'm': m})
@@ -176,7 +181,7 @@ class GraphCanvas(tk.Canvas):
         if graph is None:
             graph = self.dataG
         
-        if isinstance(node, list):
+        if isinstance(node, list) or isinstance(node, tuple):
             neighbors = set(node)
         else:
             neighbors = set([node])
@@ -264,6 +269,15 @@ class GraphCanvas(tk.Canvas):
         self._drag_data["item"] = item
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
+
+        dataG_id = self.dispG.node[item]['dataG_id']
+
+        self.onNodeSelected(dataG_id, self.dataG.node[dataG_id])
+
+
+    def onNodeSelected(self, node_name, node_data):
+        """Overwrite with custom function in external UI"""
+        pass
 
     def onNodeButtonRelease(self, event):
         """End drag of an object"""
@@ -436,7 +450,7 @@ class GraphCanvas(tk.Canvas):
 
     def onEdgeRightClick(self, event):
         item = self._get_id(event, 'edge')
-        for u,v,k,d in self.dispG.edges_iter(key=True, data=True):
+        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
             if d['token_id'] == item:
                 break
         
@@ -447,8 +461,19 @@ class GraphCanvas(tk.Canvas):
             popup.post(event.x_root, event.y_root)
         finally:
             popup.grab_release()
-        
-    
+
+    def onEdgeClick(self, event):
+        item = self._get_id(event, 'edge')
+        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
+            if d['token_id'] == item:
+                break
+        dataG_id = self.dispG.edge[u][v][k]['dataG_id']
+        self.onEdgeSelected(dataG_id, self.dataG.get_edge_data(*dataG_id))
+
+    def onEdgeSelected(self, edge_name, edge_data):
+        """Overwrite with custom function in external UI"""
+        pass
+
     def hide_edge(self, edge_id):
         # This feature breaks the "grow" feature.  Also I've decided I kind of
         #  don't like it as it's decieving to have both nodes on the display
