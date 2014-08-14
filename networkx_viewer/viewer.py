@@ -2,10 +2,12 @@ try:
     # Python 3
     import tkinter as tk
     import tkinter.messagebox as tkm
+    import tkinter.simpledialog as tkd
 except ImportError:
     # Python 2
     import Tkinter as tk
     import tkMessageBox as tkm
+    import tkSimpleDialog as tkd
 
 
 
@@ -25,10 +27,10 @@ class ViewerApp(tk.Tk):
         self.title('NetworkX Viewer')
 
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(9, weight=1)
+        self.rowconfigure(10, weight=1)
 
         self.canvas = GraphCanvas(graph, width=400, height=400, **kwargs)
-        self.canvas.grid(row=0, column=0, rowspan=10, sticky='NESW')
+        self.canvas.grid(row=0, column=0, rowspan=11, sticky='NESW')
         self.canvas.onNodeSelected = self.onNodeSelected
         self.canvas.onEdgeSelected = self.onEdgeSelected
 
@@ -81,11 +83,34 @@ class ViewerApp(tk.Tk):
             row=7, column=1)
         tk.Button(self, text='Add to Existing').grid(row=7, column=2, columnspan=2)
 
-        self.lbl_attr = tk.Label(self, text='Attributes', underline=True)
-        self.lbl_attr.grid(row=8, column=1, columnspan=4, sticky='NW')
+
+
+        line = tk.Canvas(self, height=15, width=200)
+        line.create_line(0,13,250,13)
+        line.create_line(0,15,250,15)
+        line.grid(row=8, column=1, columnspan=5, sticky='NESW')
+        self.lbl_attr = tk.Label(self, text='Attributes',
+                                 wraplength=200, anchor=tk.SW, justify=tk.LEFT)
+        self.lbl_attr.grid(row=9, column=1, columnspan=4, sticky='NW')
 
         self.tbl_attr = PropertyTable(self, {})
-        self.tbl_attr.grid(row=9, column=1, columnspan=4, sticky='NESW')
+        self.tbl_attr.grid(row=10, column=1, columnspan=4, sticky='NESW')
+
+        self._build_menu()
+
+    def _build_menu(self):
+        self.menubar = tk.Menu(self)
+        self.config(menu=self.menubar)
+
+        view = tk.Menu(self.menubar, tearoff=0)
+        view.add_command(label='Center on node...', command=self.center_on_node)
+        view.add_command(label='Replot', command=self.canvas.replot)
+        self.menubar.add_cascade(label='View', menu=view)
+
+    def center_on_node(self):
+        node = tkd.askstring("Node Name", "Name of node to center on:")
+        self.canvas.center_on_node(node)
+
 
     def add_node(self, event=None):
         node = self.node_entry.get()
@@ -192,8 +217,8 @@ class PropertyTable(tk.Frame):
 
         def _make_pretty(value):
             ans = str(value)
-            if len(ans) > 20:
-                ans = ans[:17] + '...'
+            if len(ans) > 255:
+                ans = ans[:253] + '...'
             return ans
         property_dict = {_make_pretty(k): _make_pretty(v)
                             for k, v in property_dict.items()}
@@ -202,9 +227,11 @@ class PropertyTable(tk.Frame):
         dict_values = sorted(property_dict.items(), key=lambda x: x[0])
 
         for n,(k,v) in enumerate(dict_values):
-            tk.Label(self.interior, text=k, borderwidth=1, relief=tk.SOLID).grid(
+            tk.Label(self.interior, text=k, borderwidth=1, relief=tk.SOLID,
+                wraplength=75, anchor=tk.E, justify=tk.RIGHT).grid(
                 row=n, column=0, sticky='nesw', padx=1, pady=1, ipadx=1)
-            tk.Label(self.interior, text=v, borderwidth=1).grid(
+            tk.Label(self.interior, text=v, borderwidth=1,
+                wraplength=125, anchor=tk.W, justify=tk.LEFT).grid(
                 row=n, column=1, sticky='nesw', padx=1, pady=1, ipadx=1)
 
 

@@ -79,7 +79,8 @@ class GraphCanvas(tk.Canvas):
 
         self._plot_graph(graph)
 
-
+        # Center the plot on the home node or first node in graph
+        self.center_on_node(home_node or graph.nodes_iter().next())
 
         # add bindings for clicking, dragging and releasing over
         # any object with the "node" tammg
@@ -448,6 +449,29 @@ class GraphCanvas(tk.Canvas):
         token = self.dispG.node[disp_node]['token']
         token.mark()
 
+    def center_on_node(self, data_node):
+        """Center canvas on given **DATA** node"""
+        try:
+            disp_node = self._find_disp_node(data_node)
+        except ValueError as e:
+            tkm.showerror("Unable to find node", str(e))
+            return
+        x,y = self.coords(self.dispG.node[disp_node]['token_id'])
+
+        # Find center of canvas
+        w = self.winfo_width()/2
+        h = self.winfo_height()/2
+        if w == 0:
+            # We haven't been drawn yet
+            w = int(self['width'])/2
+            h = int(self['height'])/2
+
+        # Calc delta to move to center
+        delta_x = w - x
+        delta_y = h - y
+
+        self.move(tk.ALL, delta_x, delta_y)
+
     def onEdgeRightClick(self, event):
         item = self._get_id(event, 'edge')
         for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
@@ -500,9 +524,20 @@ class GraphCanvas(tk.Canvas):
         self.dispG.clear()
 
     def plot(self, home_node, levels=1):
-        """Plot node (from dataG) out to levels"""
+        """Plot node (from dataG) out to levels.  home_node can be list of nodes."""
         graph = self._neighbors(home_node, levels=levels)
         self._plot_graph(graph)
+
+        if isinstance(home_node, str):
+            self.center_on_node(home_node)
+        else:
+            self.center_on_node(home_node[0])
+
+    def replot(self):
+        """Replot existing nodes, hopefully providing a better layout"""
+        nodes = [d['dataG_id'] for n, d in self.dispG.nodes_iter(data=True)]
+        self.clear()
+        self.plot(nodes, levels=0)
 
     def plot_path(self, frm_node, to_node, levels=1):
         """Plot shortest path between two nodes"""
@@ -574,6 +609,12 @@ class GraphCanvas(tk.Canvas):
         """Given a node's name in self.dataG, find in self.dispG"""
         disp_node = [a for a, d in self.dispG.nodes_iter(data=True)
                     if d['dataG_id'] == data_node]
+        if len(disp_node) == 0 and str(data_node).isdigit():
+            # Try again, this time using the int version
+            data_node = int(data_node)
+            disp_node = [a for a, d in self.dispG.nodes_iter(data=True)
+                    if d['dataG_id'] == data_node]
+
         if len(disp_node) == 0:
             raise ValueError("Data Node '%s' is not currently displayed"%\
                                 data_node)
