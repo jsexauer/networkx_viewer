@@ -80,7 +80,7 @@ class GraphCanvas(tk.Canvas):
         self._plot_graph(graph)
 
         # Center the plot on the home node or first node in graph
-        self.center_on_node(home_node or graph.nodes_iter().next())
+        self.center_on_node(home_node or graph.nodes()[0])
 
         # add bindings for clicking, dragging and releasing over
         # any object with the "node" tammg

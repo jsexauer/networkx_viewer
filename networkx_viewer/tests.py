@@ -203,6 +203,15 @@ class TestGraphCanvas(unittest.TestCase):
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '1.0')
 
+    def test_plot_list(self):
+        self.a.plot(['a','c','d'])
+        self.check_subgraph()
+        displayed = [d['dispG_id'] for n,d in self.a.dispG.nodes()]
+
+        for k in['a','c','d']:
+            self.assertIn(k, displayed)
+
+
 
 class TestGraphCanvasTkPassthrough(TestGraphCanvas):
     # We inherit for the base tester to make sure we continue to
