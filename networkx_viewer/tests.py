@@ -204,9 +204,10 @@ class TestGraphCanvas(unittest.TestCase):
         self.assertEqual(cfg['width'][-1], '1.0')
 
     def test_plot_list(self):
+        self.a.clear()
         self.a.plot(['a','c','d'])
         self.check_subgraph()
-        displayed = [d['dispG_id'] for n,d in self.a.dispG.nodes()]
+        displayed = [d['dataG_id'] for n,d in self.a.dispG.nodes(data=True)]
 
         for k in['a','c','d']:
             self.assertIn(k, displayed)
