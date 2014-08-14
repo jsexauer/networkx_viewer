@@ -528,10 +528,10 @@ class GraphCanvas(tk.Canvas):
         graph = self._neighbors(home_node, levels=levels)
         self._plot_graph(graph)
 
-        if isinstance(home_node, str):
-            self.center_on_node(home_node)
-        else:
+        if isinstance(home_node, (list, tuple, set)):
             self.center_on_node(home_node[0])
+        else:
+            self.center_on_node(home_node)
 
     def replot(self):
         """Replot existing nodes, hopefully providing a better layout"""
