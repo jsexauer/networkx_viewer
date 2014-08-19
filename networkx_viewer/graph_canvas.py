@@ -120,9 +120,9 @@ class GraphCanvas(tk.Canvas):
         for key, data in edges.items():
             token = self._EdgeTokenClass(data)
             if isinstance(self.dataG, nx.MultiGraph):
-                dataG_id = (u,v)
-            elif isinstance(self.dataG, nx.Graph):
                 dataG_id = (u,v,key)
+            elif isinstance(self.dataG, nx.Graph):
+                dataG_id = (u,v)
             self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': dataG_id,
                                                 'dispG_frm': frm_disp,
                                                 'token': token,
