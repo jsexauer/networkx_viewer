@@ -23,7 +23,7 @@ class ViewerApp(tk.Tk):
         """Additional keyword arguments beyond graph are passed down to the
         GraphCanvas.  See it's docs for details"""
         tk.Tk.__init__(self)
-        self.geometry('600x600')
+        self.geometry('1000x600')
         self.title('NetworkX Viewer')
 
         self.columnconfigure(0, weight=1)
@@ -105,6 +105,7 @@ class ViewerApp(tk.Tk):
         view = tk.Menu(self.menubar, tearoff=0)
         view.add_command(label='Center on node...', command=self.center_on_node)
         view.add_command(label='Replot', command=self.canvas.replot)
+        view.add_command(label='Grow display one level...', command=self.grow_all)
         self.menubar.add_cascade(label='View', menu=view)
 
     def center_on_node(self):
@@ -123,6 +124,12 @@ class ViewerApp(tk.Tk):
             self.node_entry.delete(0, tk.END)
         else:
             tkm.showerror("Node not found", "Node '%s' not in graph."%node)
+
+    def grow_all(self):
+        """Grow all visible nodes one level"""
+        for u, d in self.canvas.dispG.node.copy().items():
+            if not d['token'].is_complete:
+                self.canvas.grow_node(u)
 
     def onBuildNew(self):
         nodes = self.node_list.get(0, tk.END)

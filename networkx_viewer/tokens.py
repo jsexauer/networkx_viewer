@@ -51,6 +51,11 @@ class NodeToken(tk.Canvas):
         if self._complete:
             self._complete = False
 
+    @property
+    def is_complete(self):
+        """Returns True if all edges have been drawn"""
+        return self._complete
+
 
     def _host_event(self, func_name):
         """Wrapper to correct the event's x,y coordinates and pass to host
