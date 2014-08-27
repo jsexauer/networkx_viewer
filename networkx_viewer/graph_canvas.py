@@ -13,10 +13,12 @@ try:
     # Python 3
     import tkinter as tk
     import tkinter.messagebox as tkm
+    import tkinter.simpledialog as tkd
 except ImportError:
     # Python 2
     import Tkinter as tk
     import tkMessageBox as tkm
+    import tkSimpleDialog as tkd
 
 import networkx as nx
 
@@ -321,6 +323,8 @@ class GraphCanvas(tk.Canvas):
         popup = tk.Menu(self, tearoff=0)
         popup.add_command(label='Grow', command=lambda: self.grow_node(item),
                               accelerator='G')
+        popup.add_command(label='Grow until...',
+                          command=lambda: self.grow_until(item))
         popup.add_command(label='Mark', command=lambda: self.mark_node(item),
                               accelerator='M')
         popup.add_command(label='Hide', command=lambda: self.hide_node(item),
@@ -368,67 +372,71 @@ class GraphCanvas(tk.Canvas):
             self.mark_node(item)
 
 
-    def grow_node(self, disp_node):
+    def grow_node(self, disp_node, levels=1):
+        data_node = self.dispG.node[disp_node]['dataG_id']
+
+        grow_graph = self._neighbors(data_node, levels)
+
+        self._plot_additional(grow_graph.nodes())
+
+    def grow_until(self, disp_node):
+
+        # Find condition to stop growing
+        stop_condition = tkd.askstring("Stop Condition", "Enter lambda "
+                "function which returns true when stop condition is met.\n"
+                "Parameters are u, the nodes name, and d, the data "
+                "dictionary.\n\nExample: "
+                "d['color']=='red' \nwould grow until a red node is found.")
+
+        if stop_condition is None: return
+
         data_node = self.dispG.node[disp_node]['dataG_id']
         existing_data_nodes = set([ v['dataG_id']
                                     for k,v in self.dispG.node.items() ])
 
-        grow_graph = self._neighbors(data_node)
-
-        # We also need grow_graph to include nodes which are already
-        # ploted but are not immediate neighbors, so that we can successfully
-        # capture their edges.  To do this, we should subgraph the data graph
-        # using the nodes of the grow graph and existing data nodes
-        nodes = set(grow_graph.nodes()).union(existing_data_nodes)
-        grow_graph = self.dataG.subgraph(nodes)
-
-        # Build layout considering existing nodes and
-        #  argument to center around the home node (ie, "disp_node")
-        fixed = {}
-        for n,d in self.dispG.nodes_iter(data=True):
-            fixed[d['dataG_id']] = self.coords(n)
-
-        layout = self.create_layout(grow_graph,
-                                    pos=fixed, fixed=list(fixed.keys()))
-        ##for k in list(layout.keys()):
-        ##    layout[k] = [layout[k][0]*scale, layout[k][1]*scale]
-        # Recenter around existing node
-        (existx, existy) = self._node_center(disp_node)
-        deltax = existx - layout[data_node][0]
-        deltay = existy - layout[data_node][1]
-        for k in list(layout.keys()):
-            layout[k] = [layout[k][0]+deltax, layout[k][1]+deltay]
-
-
-
-        # Filter the graph to only include new edges
-        for n,m in grow_graph.copy().edges_iter():
-            if (n in existing_data_nodes) and (m in existing_data_nodes):
-                grow_graph.remove_edge(n,m)
-
-        # Remove any nodes which connected to only existing nodes (ie, they
-        #  they connect to nothing else in grow_graph)
-        for n, degree in grow_graph.copy().degree_iter():
-            if degree == 0:
-                grow_graph.remove_node(n)
-
-        if len(grow_graph.nodes()) == 0:
-            # No new nodes to add
+        max_iters = 10
+        stop_node = None    # Node which met stop condition
+        grow_nodes = set([data_node])   # New nodes
+        # Iterate until we find a node that matches the stop condition (or,
+        #  worst case, we reach max iters)
+        for i in range(1,max_iters+1):
+            old_grow_nodes = grow_nodes.copy()
+            grow_nodes.clear()
+            for n in old_grow_nodes:
+                grow_graph = self._neighbors(n, levels=i)
+                grow_nodes = set(grow_graph.nodes()) - existing_data_nodes - \
+                            old_grow_nodes
+            if len(grow_nodes) == 0:
+                # Start out next iteration with the entire graph
+                grow_nodes = existing_data_nodes.copy()
+                print('expanding to whole graph for search')
+                continue
+            for u in grow_nodes:
+                d = self.dataG.node[u]
+                try:
+                    stop = eval(stop_condition, {'u':u, 'd':d})
+                except Exception as e:
+                    tkm.showerror("Invalid Stop Condition",
+                                  "Evaluating the stop condition\n\n" +
+                                  stop_condition + "\n\nraise the following " +
+                                  "exception:\n\n" + str(e))
+                    return
+                if stop:
+                    stop_node = u
+                    break
+            if stop_node is not None:
+                break
+        if stop_node is None:
+            tkm.showerror("Stop Condition Not Reached", "Unable to find a node "
+            "which meet the stop condition.")
             return
 
-        # Plot the new nodes and add to the disp graph
-        for n in grow_graph.nodes():
-            if n in existing_data_nodes: continue
-            self._draw_node(layout[n], n)
+        ## Grow the number of times it took to find the node
+        #self.grow_node(disp_node, i)
 
-        for n, m in set(grow_graph.edges()):
-            if (n in existing_data_nodes) and (m in existing_data_nodes):
-                continue
+        # Find shortest path to stop_node
+        self.plot_path(data_node, stop_node, levels=0, add_to_exsting=True)
 
-            # Add edge to dispG and draw
-            self._draw_edge(n, m)
-
-        self._graph_changed()
 
     def hide_node(self, disp_node):
 
@@ -539,7 +547,7 @@ class GraphCanvas(tk.Canvas):
         self.clear()
         self.plot(nodes, levels=0)
 
-    def plot_path(self, frm_node, to_node, levels=1):
+    def plot_path(self, frm_node, to_node, levels=1, add_to_exsting=False):
         """Plot shortest path between two nodes"""
         try:
             path = nx.shortest_path(self.dataG, frm_node, to_node)
@@ -552,11 +560,14 @@ class GraphCanvas(tk.Canvas):
 
         graph = self.dataG.subgraph(self._neighbors(path,levels=levels))
 
-        self.clear()
-        self._plot_graph(graph)
+        if add_to_exsting:
+            self._plot_additional(graph.nodes())
+        else:
+            self.clear()
+            self._plot_graph(graph)
 
         # Mark the path
-        if levels > 0:
+        if levels > 0 or add_to_exsting:
             for u, v in zip(path[:-1], path[1:]):
                 u_disp = self._find_disp_node(u)
                 v_disp = self._find_disp_node(v)
@@ -589,6 +600,55 @@ class GraphCanvas(tk.Canvas):
 
         self._graph_changed()
 
+    def _plot_additional(self, nodes):
+        """Add a set of nodes to the graph, kepping all already
+        existing nodes in the graph"""
+        # We also need grow_graph to include nodes which are already
+        # ploted but are not immediate neighbors, so that we can successfully
+        # capture their edges.  To do this, we should subgraph the data graph
+        # using the nodes of the grow graph and existing data nodes
+        existing_data_nodes = set([ v['dataG_id']
+                            for k,v in self.dispG.node.items() ])
+        nodes = set(nodes).union(existing_data_nodes)
+        grow_graph = self.dataG.subgraph(nodes)
+
+        # Build layout considering existing nodes and
+        #  argument to center around the home node (ie, "disp_node")
+        fixed = {}
+        for n,d in self.dispG.nodes_iter(data=True):
+            fixed[d['dataG_id']] = self.coords(n)
+
+        layout = self.create_layout(grow_graph,
+                                    pos=fixed, fixed=list(fixed.keys()))
+
+        # Filter the graph to only include new edges
+        for n,m in grow_graph.copy().edges_iter():
+            if (n in existing_data_nodes) and (m in existing_data_nodes):
+                grow_graph.remove_edge(n,m)
+
+        # Remove any nodes which connected to only existing nodes (ie, they
+        #  they connect to nothing else in grow_graph)
+        for n, degree in grow_graph.copy().degree_iter():
+            if degree == 0:
+                grow_graph.remove_node(n)
+
+        if len(grow_graph.nodes()) == 0:
+            # No new nodes to add
+            return
+
+        # Plot the new nodes and add to the disp graph
+        for n in grow_graph.nodes():
+            if n in existing_data_nodes: continue
+            self._draw_node(layout[n], n)
+
+        for n, m in set(grow_graph.edges()):
+            if (n in existing_data_nodes) and (m in existing_data_nodes):
+                continue
+
+            # Add edge to dispG and draw
+            self._draw_edge(n, m)
+
+        self._graph_changed()
 
 
     def _graph_changed(self):
