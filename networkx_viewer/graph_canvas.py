@@ -384,8 +384,8 @@ class GraphCanvas(tk.Canvas):
         # Find condition to stop growing
         stop_condition = tkd.askstring("Stop Condition", "Enter lambda "
                 "function which returns true when stop condition is met.\n"
-                "Parameters are u, the nodes name, and d, the data "
-                "dictionary.\n\nExample: "
+                "Parameters are:\n  - u, the node's name, and \n  "
+                "- d, the data dictionary.\n\nExample: "
                 "d['color']=='red' \nwould grow until a red node is found.")
 
         if stop_condition is None: return
@@ -404,8 +404,8 @@ class GraphCanvas(tk.Canvas):
             grow_nodes.clear()
             for n in old_grow_nodes:
                 grow_graph = self._neighbors(n, levels=i)
-                grow_nodes = set(grow_graph.nodes()) - existing_data_nodes - \
-                            old_grow_nodes
+                grow_nodes = grow_nodes.union(set(grow_graph.nodes())) - \
+                             existing_data_nodes - old_grow_nodes
             if len(grow_nodes) == 0:
                 # Start out next iteration with the entire graph
                 grow_nodes = existing_data_nodes.copy()
@@ -428,7 +428,7 @@ class GraphCanvas(tk.Canvas):
                 break
         if stop_node is None:
             tkm.showerror("Stop Condition Not Reached", "Unable to find a node "
-            "which meet the stop condition.")
+            "which meet the stop condition within %d levels."%i)
             return
 
         ## Grow the number of times it took to find the node
