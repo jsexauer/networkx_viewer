@@ -184,7 +184,7 @@ class GraphCanvas(tk.Canvas):
         if graph is None:
             graph = self.dataG
 
-        if isinstance(node, list) or isinstance(node, tuple):
+        if isinstance(node, (list, tuple, set)):
             neighbors = set(node)
         else:
             neighbors = set([node])
