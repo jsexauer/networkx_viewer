@@ -343,7 +343,8 @@ class GraphCanvas(tk.Canvas):
 
         popup.add_cascade(label='Hide Behind', menu=hide_behind)
 
-
+        token = self.dispG.node[item]['token']
+        token.customize_menu(popup)
 
         try:
             popup.post(event.x_root, event.y_root)

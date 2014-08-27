@@ -56,6 +56,11 @@ class NodeToken(tk.Canvas):
         """Returns True if all edges have been drawn"""
         return self._complete
 
+    def customize_menu(self, menu):
+        """Ovewrite this method to customize the menu this token displays
+        when it is right-clicked"""
+        pass
+
 
     def _host_event(self, func_name):
         """Wrapper to correct the event's x,y coordinates and pass to host
@@ -92,6 +97,11 @@ class EdgeToken(object):
             return {'width': mark_width}
         else:
             return {'width': 1.0}
+
+    def customize_menu(self, menu):
+        """Ovewrite this method to customize the menu this token displays
+        when it is right-clicked"""
+        pass
 
 class TkPassthroughNodeToken(NodeToken):
     def render(self, data, node_name):
