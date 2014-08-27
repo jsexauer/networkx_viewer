@@ -104,14 +104,31 @@ class ViewerApp(tk.Tk):
 
         view = tk.Menu(self.menubar, tearoff=0)
         view.add_command(label='Center on node...', command=self.center_on_node)
-        view.add_command(label='Replot', command=self.canvas.replot)
+        view.add_separator()
+        view.add_command(label='Reset Node Marks', command=self.reset_node_markings)
+        view.add_command(label='Reset Edge Marks', command=self.reset_edge_markings)
+        view.add_command(label='Redraw Plot', command=self.canvas.replot)
+        view.add_separator()
         view.add_command(label='Grow display one level...', command=self.grow_all)
+
         self.menubar.add_cascade(label='View', menu=view)
 
     def center_on_node(self):
         node = tkd.askstring("Node Name", "Name of node to center on:")
+        if node is None: return
         self.canvas.center_on_node(node)
 
+    def reset_edge_markings(self):
+        for u,v,k,d in self.canvas.dispG.edges_iter(data=True, keys=True):
+            token = d['token']
+            if token.is_marked:
+                self.canvas.mark_edge(u,v,k)
+
+    def reset_node_markings(self):
+        for u,d in self.canvas.dispG.nodes_iter(data=True):
+            token = d['token']
+            if token.is_marked:
+                self.canvas.mark_node(u)
 
     def add_node(self, event=None):
         node = self.node_entry.get()

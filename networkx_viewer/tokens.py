@@ -52,6 +52,10 @@ class NodeToken(tk.Canvas):
             self._complete = False
 
     @property
+    def is_marked(self):
+        return self._marked
+
+    @property
     def is_complete(self):
         """Returns True if all edges have been drawn"""
         return self._complete
@@ -97,6 +101,10 @@ class EdgeToken(object):
             return {'width': mark_width}
         else:
             return {'width': 1.0}
+
+    @property
+    def is_marked(self):
+        return self._marked
 
     def customize_menu(self, menu):
         """Ovewrite this method to customize the menu this token displays
