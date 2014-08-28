@@ -380,16 +380,17 @@ class GraphCanvas(tk.Canvas):
 
         self._plot_additional(grow_graph.nodes())
 
-    def grow_until(self, disp_node):
+    def grow_until(self, disp_node, stop_condition=None, levels=0):
 
         # Find condition to stop growing
-        stop_condition = tkd.askstring("Stop Condition", "Enter lambda "
-                "function which returns true when stop condition is met.\n"
+        if stop_condition is None:
+            stop_condition = tkd.askstring("Stop Condition", "Enter lambda "
+                "function which returns True when stop condition is met.\n"
                 "Parameters are:\n  - u, the node's name, and \n  "
                 "- d, the data dictionary.\n\nExample: "
                 "d['color']=='red' \nwould grow until a red node is found.")
 
-        if stop_condition is None: return
+            if stop_condition is None: return
 
         data_node = self.dispG.node[disp_node]['dataG_id']
         existing_data_nodes = set([ v['dataG_id']
@@ -436,7 +437,7 @@ class GraphCanvas(tk.Canvas):
         #self.grow_node(disp_node, i)
 
         # Find shortest path to stop_node
-        self.plot_path(data_node, stop_node, levels=0, add_to_exsting=True)
+        self.plot_path(data_node, stop_node, levels=levels, add_to_exsting=True)
 
 
     def hide_node(self, disp_node):
