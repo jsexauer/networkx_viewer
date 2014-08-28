@@ -15,6 +15,7 @@ import networkx as nx
 
 from networkx_viewer.graph_canvas import GraphCanvas
 from networkx_viewer.tokens import TkPassthroughEdgeToken, TkPassthroughNodeToken
+from networkx_viewer.autocomplete_entry import AutocompleteEntry
 
 
 class ViewerApp(tk.Tk):
@@ -35,7 +36,8 @@ class ViewerApp(tk.Tk):
         self.canvas.onEdgeSelected = self.onEdgeSelected
 
         tk.Label(self, text='Node:').grid(row=0, column=1, sticky='W')
-        self.node_entry = tk.Entry(self, width=10)
+        self.node_entry = AutocompleteEntry(self.canvas.dataG.nodes,
+                                            width=10)
         self.node_entry.bind('<Return>',self.add_node)
         self.node_entry.grid(row=0, column=2, columnspan=2, sticky='NESW', pady=2)
         tk.Button(self, text='+', command=self.add_node, width=2).grid(
