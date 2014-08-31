@@ -344,6 +344,30 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         self.assertEqual(cfg['fill'][-1], 'red')
         self.assertEqual(cfg['width'][-1], '3.0')
 
+    def test_refresh(self):
+        # Make sure that if we change the underlying data dictionaries of the
+        #  dataG and call refresh, the changes propagate
+
+        # Make edge a-c magenta
+        self.a.dataG.edge['a']['c']['fill'] = 'magenta'
+
+        # Make node a magenta
+        self.a.dataG.node['a']['fill'] = 'magenta'
+
+        self.a.refresh()
+
+        # See that the changes propagated through
+        a = self.a._find_disp_node('a')
+        c = self.a._find_disp_node('c')
+
+        token_id = self.a.dispG.edge[a][c][0]['token_id']
+        cfg = self.a.itemconfig(token_id)
+        self.assertEqual(cfg['fill'][-1], 'magenta')
+
+        token = self.a.dispG.node[a]['token']
+        cfg = token.itemconfig(token.marker)
+        self.assertEqual(cfg['fill'][-1], 'magenta')
+
 class TestGraphCanvasMultiGraph(TestGraphCanvas):
     def setUp(self):
         super(TestGraphCanvasMultiGraph, self).setUp()

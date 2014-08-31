@@ -600,6 +600,29 @@ class GraphCanvas(tk.Canvas):
         self.clear()
         self.plot(nodes, levels=0)
 
+    def refresh(self):
+        """Redrawn nodes and edges, updating any display attributes that
+        maybe have changed in the underlying tokens.
+        This method should be called anytime the underling data graph changes"""
+
+        # Edges
+        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
+            token = d['token']
+            token_id = d['token_id']
+            dataG_id = d['dataG_id']
+            token.edge_data = self.dataG.get_edge_data(*dataG_id)
+            cfg = token.render()
+            self.itemconfig(token_id, cfg)
+
+        # Nodes
+        for u, d in self.dispG.nodes_iter(data=True):
+            token = d['token']
+            node_name = d['dataG_id']
+            data = self.dataG.node[node_name]
+            token.render(data, node_name)
+
+
+
     def plot_path(self, frm_node, to_node, levels=1, add_to_exsting=False):
         """Plot shortest path between two nodes"""
         try:
