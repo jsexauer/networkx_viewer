@@ -579,7 +579,7 @@ class GraphCanvas(tk.Canvas):
                 ans = tkm.askyesno("Plot path?", "A path exists between the "
                   "currently graph and the nodes you've asked to be added "
                   "to the display.  Would you like to plot that path?")
-                if ans == 'yes':
+                if ans: # Yes to prompt
                     # Add the nodes from the source graph which are part of
                     #  the path to the new_nodes set
                     # Don't include end points because they are the two islands
