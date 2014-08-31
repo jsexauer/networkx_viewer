@@ -12,9 +12,12 @@ import sys
 if sys.version_info > (3, 0):
     # Python 3 patching
     SHOWERROR_FUNC = 'tkinter.messagebox.showerror'
+    ASKYESNO_FUNC = 'tkinter.messagebox.askyesno'
 else:
     # Python 2
     SHOWERROR_FUNC = 'tkMessageBox.showerror'
+    ASKYESNO_FUNC = 'tkMessageBox.askyesno'
+
 
 class TestGraphCanvas(unittest.TestCase):
     def setUp(self):
@@ -212,7 +215,47 @@ class TestGraphCanvas(unittest.TestCase):
         for k in['a','c','d']:
             self.assertIn(k, displayed)
 
+    def test_add_to_plot_with_path(self):
+        # Test adding nodes around qqqq to a display showing nodes around a
+        self.display_a()
 
+        with patch(ASKYESNO_FUNC) as prompt:
+            prompt.return_value = True      # Yes, we want to include path
+            self.a.plot_additional(set(['qqqq']), levels=1)
+
+        self.assertTrue(prompt.called)
+        self.check_subgraph()
+        self.check_num_nodes_edges(9, 11)
+        # All connected together
+        self.assertEqual(nx.number_connected_components(self.a.dispG), 1)
+
+    def test_add_to_plot_without_path(self):
+        # Test adding nodes around qqqq to a display but as an island
+        self.display_a()
+
+        with patch(ASKYESNO_FUNC) as prompt:
+            prompt.return_value = False      # No, we don't want to include path
+            self.a.plot_additional(set(['qqqq']), levels=1)
+
+        self.assertTrue(prompt.called)
+        self.check_subgraph()
+        self.check_num_nodes_edges(8, 9)
+        # There are two islands
+        self.assertEqual(nx.number_connected_components(self.a.dispG), 2)
+
+    def test_add_to_plot_without_path2(self):
+        # Test adding nodes around qqqq but because our levels is so big, we
+        #  should just connect to the existing graph (no prompt)
+        self.display_a()
+
+        with patch(ASKYESNO_FUNC) as prompt:
+            self.a.plot_additional(set(['qqqq']), levels=2)
+
+        self.assertFalse(prompt.called) # We should not prompt
+        self.check_subgraph()
+        self.check_num_nodes_edges(9, 11)
+        # All connected together
+        self.assertEqual(nx.number_connected_components(self.a.dispG), 1)
 
 class TestGraphCanvasTkPassthrough(TestGraphCanvas):
     # We inherit for the base tester to make sure we continue to
