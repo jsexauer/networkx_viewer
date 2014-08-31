@@ -202,6 +202,7 @@ class GraphCanvas(tk.Canvas):
         # If we remove the edge in question, it should radialize the system
         #  and we can then detect the side to remove
         G = nx.Graph()
+        G.add_nodes_from(self.dispG.nodes())
         G.add_edges_from(self.dispG.edges())
         G.remove_edge(home_node, behind_node)
 

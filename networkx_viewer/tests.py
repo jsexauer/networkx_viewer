@@ -37,7 +37,7 @@ class TestGraphCanvas(unittest.TestCase):
         G.add_edge(12, 'd')
         G.add_edge('TTTTT',11)
         G.add_edge('qqqq', 'TTTTT')
-        G.add_edge('alone','alone')
+        G.add_node('alone')
         self.input_G = G.copy()
 
         # Viewer under test
@@ -103,7 +103,7 @@ class TestGraphCanvas(unittest.TestCase):
         self.a.plot('alone')
 
         self.check_subgraph()
-        self.check_num_nodes_edges(1,1)
+        self.check_num_nodes_edges(1,0)
 
     def test_grow(self):
         self.display_a()
