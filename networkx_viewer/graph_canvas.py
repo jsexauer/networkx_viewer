@@ -552,11 +552,14 @@ class GraphCanvas(tk.Canvas):
 
         displayed_data_nodes = set([ v['dataG_id']
                             for k,v in self.dispG.node.items() ])
-        if len(displayed_data_nodes.intersection(new_nodes)) > 0:
-            # A connection between the two parts of the graph exist in what
-            #  the user asked for; simply add nodes to graph
-            pass
-        else:
+
+        # It is possible the new nodes create a connection with the existing
+        #  nodes; in such a case, we don't need to try to find the shortest
+        #  path between the two blocks
+        current_num_islands = nx.number_connected_components(self.dispG)
+        new_num_islands = nx.number_connected_components(
+            self.dataG.subgraph(displayed_data_nodes.union(new_nodes)))
+        if new_num_islands > current_num_islands:
             # Find shortest path between two blocks graph and, if it exists,
             #  ask the user if they'd like to include those nodes in the
             #  display as well.
