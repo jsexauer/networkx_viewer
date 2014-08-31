@@ -174,49 +174,7 @@ class ViewerApp(tk.Tk):
         """Add nodes to existing plot.  Prompt to include link to existing
         if possible"""
         home_nodes = set(self.get_node_list())
-        new_nodes = self.canvas._neighbors(home_nodes, levels=self.level)
-        new_nodes = home_nodes.union(new_nodes)
-
-        displayed_data_nodes = set([ v['dataG_id']
-                            for k,v in self.canvas.dispG.node.items() ])
-        if len(displayed_data_nodes.intersection(new_nodes)) > 0:
-            # A connection between the two parts of the graph exist in what
-            #  the user asked for; simply add nodes to graph
-            pass
-        else:
-            # Find shortest path between two blocks graph and, if it exists,
-            #  ask the user if they'd like to include those nodes in the
-            #  display as well.
-            # First, create a block model of our data graph where what is
-            #  current displayed is a block, the new nodes are a a block
-            all_nodes = set(self.canvas.dataG.nodes())
-            singleton_nodes = all_nodes - displayed_data_nodes - new_nodes
-            singleton_nodes = map(lambda x: [x], singleton_nodes)
-            partitions = [displayed_data_nodes, new_nodes] + \
-                         list(singleton_nodes)
-            B = nx.blockmodel(self.canvas.dataG, partitions, multigraph=True)
-
-            # Find shortest path between existing display (node 0) and
-            #  new display island (node 1)
-            try:
-                path = nx.shortest_path(B, 0, 1)
-            except nx.NetworkXNoPath:
-                pass
-            else:
-                ans = tkm.askyesno("Plot path?", "A path exists between the "
-                  "currently graph and the nodes you've asked to be added "
-                  "to the display.  Would you like to plot that path?")
-                if ans == 'yes':
-                    # Add the nodes from the source graph which are part of
-                    #  the path to the new_nodes set
-                    # Don't include end points because they are the two islands
-                    for u in path[1:-1]:
-                        Gu = B.node[u]['graph'].nodes()
-                        assert len(Gu) == 1; Gu = Gu[0]
-                        new_nodes.add(Gu)
-
-        # Plot the new nodes
-        self.canvas._plot_additional(new_nodes)
+        self.canvas.plot_additional(home_nodes, levels=self.level)
 
 
 
