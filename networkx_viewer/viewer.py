@@ -37,8 +37,8 @@ class ViewerApp(tk.Tk):
 
         tk.Label(self, text='Node:').grid(row=0, column=1, sticky='W')
         self.node_entry = AutocompleteEntry(self.canvas.dataG.nodes,
-                                            width=10)
-        self.node_entry.bind('<Return>',self.add_node)
+                                            width=12)
+        self.node_entry.bind('<Return>',self.add_node, add='+')
         self.node_entry.grid(row=0, column=2, columnspan=2, sticky='NESW', pady=2)
         tk.Button(self, text='+', command=self.add_node, width=2).grid(
             row=0, column=4,sticky=tk.NW,padx=2,pady=2)

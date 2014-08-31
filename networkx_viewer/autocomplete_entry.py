@@ -58,9 +58,10 @@ class AutocompleteEntry(Entry):
                                            height=self.listboxLength)
                     self.listbox.bind("<Button-1>", self.selection)
                     self.listbox.bind("<Right>", self.selection)
-                    self.listbox.place(x=self.winfo_x() + self.master.winfo_x(),
-                                       y=self.winfo_y() + self.master.winfo_y() +
-                                         self.winfo_height())
+                    self.listbox.bind("<Return>", self.selection)
+                    self.listbox.place(x=self.winfo_x(),
+                                       y=self.winfo_y() +
+                                         self.winfo_height())	
                     self.listboxUp = True
                 
                 self.listbox.delete(0, END)
