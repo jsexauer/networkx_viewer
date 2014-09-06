@@ -237,8 +237,10 @@ class GraphCanvas(tk.Canvas):
 
     def onZoon(self, event):
         factor = 0.1 * (1 if event.delta < 0 else -1)
-        x = event.x_root
-        y = event.y_root
+
+        # Translate root coordinates into relative coordinates
+        x = (event.widget.winfo_rootx() + event.x) - self.winfo_rootx()
+        y = (event.widget.winfo_rooty() + event.y) - self.winfo_rooty()
 
         # Move everyone proportional to how far they are from the cursor
         ids = self.find_withtag('node') # + self.find_withtag('edge')
