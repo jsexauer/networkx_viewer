@@ -624,6 +624,9 @@ class GraphCanvas(tk.Canvas):
             data = self.dataG.node[node_name]
             token.render(data, node_name)
 
+        # Update fully expanded status
+        self._graph_changed()
+
 
 
     def plot_path(self, frm_node, to_node, levels=1, add_to_exsting=False):
