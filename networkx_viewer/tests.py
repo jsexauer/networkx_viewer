@@ -64,9 +64,9 @@ class TestGraphCanvas(unittest.TestCase):
             # If a node does not have all its edges drawn because the opposite
             #  node is hidden, make sure we have it marked as "incomplete"
             if disp_deg == data_deg:
-                self.assertEqual(token._complete, True)
+                self.assertEqual(token.is_complete, True)
             elif disp_deg < data_deg:
-                self.assertEqual(token._complete, False)
+                self.assertEqual(token.is_complete, False)
             else:
                 self.fail("Display graph has more edges than data graph?")
 
@@ -85,7 +85,7 @@ class TestGraphCanvas(unittest.TestCase):
 
         for disp_node, disp_data in self.a.dispG.nodes_iter(data=True):
             token = disp_data['token']
-            self.assertEqual(token._complete, True)
+            self.assertEqual(token.is_complete, True)
 
     def test_partial_graph(self):
         self.display_a()
@@ -285,6 +285,86 @@ class TestGraphCanvas(unittest.TestCase):
         self.assertEqual(edge_token.is_marked, True)
         self.assertEqual(c_token.is_marked, False)
         self.assertEqual(out_token.is_marked, True)
+
+
+class TestGraphCanvasFiltered(TestGraphCanvas):
+    def setUp(self):
+        super(TestGraphCanvasFiltered, self).setUp()
+        # Modify graph to include a "real" on all existing nodes which
+        # evaluates to True when we we will filter by them
+        G = self.a.dataG
+
+        for n in G.nodes_iter():
+            G.node[n]['real'] = True
+
+        # Now we're going to add a couple of "fake" nodes; IE, nodes
+        #  that should be not be displayed because they are not in the filter.
+        #  If they do show up, they'll cause us to fail some of the base checks
+        G.add_edge('out','fake1')
+        G.add_edge('a','fake2')
+        G.add_edge('qqqq','fake3')
+        G.add_edge('fake3','fake4')
+        G.add_node('fake_alone')
+
+        # Viewer under test
+        self.a = nxv.GraphCanvas(G)
+        self.input_G = G
+        #gself.filter_lambda = "not str(u).startswith('fake')"
+        self.filter_lambda = "d.get('real',False)"
+        self.a.add_filter(self.filter_lambda)
+
+    def test_full_graph(self):
+        # Redefine this test, as when filtered, not all tokens will be marked
+        # complete
+        self.check_subgraph()
+
+        for disp_node, disp_data in self.a.dispG.nodes_iter(data=True):
+            token = disp_data['token']
+            dataG_id = disp_data['dataG_id']
+            if dataG_id in ('out','a','qqqq'):
+                # Has a "fake" node attached
+                self.assertEqual(token.is_complete, False)
+            else:
+                self.assertEqual(token.is_complete, True)
+
+    #### NEW TESTS ####
+    def test_find_disp_node(self):
+        # Make sure _find_disp_node raises a NodeFiltered exception
+        from networkx_viewer.graph_canvas import NodeFiltered
+        with self.assertRaises(NodeFiltered):
+            self.a._find_disp_node('fake1')
+
+    def test_bad_filter_lambda(self):
+        # Caues error because filter_lambda has a syntax error
+        filter_lambda = "d.get('real', False"   # Missing closing )
+        self.display_a()
+
+        self.check_num_nodes_edges(6, 8)
+        with patch(SHOWERROR_FUNC) as errorMsgBox:
+            self.a.add_filter(filter_lambda)
+        self.assertTrue(errorMsgBox.called)
+        # Make sure no edges added or removed
+        self.check_num_nodes_edges(6, 8)
+
+    def test_bad_filter_lambda2(self):
+        # Causes error because not every d has the attribute "real"
+        # but error only shows on grow
+        filter_lambda = "d['real']"
+        self.display_a()
+        self.a.remove_filter(self.filter_lambda)
+
+        self.check_num_nodes_edges(6, 8)
+        with patch(SHOWERROR_FUNC) as errorMsgBox:
+            self.a.add_filter(filter_lambda)
+            self.assertFalse(errorMsgBox.called)
+        with patch(SHOWERROR_FUNC) as errorMsgBox:
+            try:
+                self.a.grow_node(self.a._find_disp_node('out'))
+            except Exception:
+                pass
+        self.assertTrue(errorMsgBox.called)
+        # Make sure no edges added or removed
+        #self.check_num_nodes_edges(6, 8)
 
 
 class TestGraphCanvasTkPassthrough(TestGraphCanvas):

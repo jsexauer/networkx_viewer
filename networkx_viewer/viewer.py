@@ -27,77 +27,89 @@ class ViewerApp(tk.Tk):
         self.geometry('1000x600')
         self.title('NetworkX Viewer')
 
+        bottom_row = 10
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(10, weight=1)
+        self.rowconfigure(bottom_row, weight=1)
 
         self.canvas = GraphCanvas(graph, width=400, height=400, **kwargs)
-        self.canvas.grid(row=0, column=0, rowspan=11, sticky='NESW')
+        self.canvas.grid(row=0, column=0, rowspan=bottom_row+2, sticky='NESW')
         self.canvas.onNodeSelected = self.onNodeSelected
         self.canvas.onEdgeSelected = self.onEdgeSelected
 
-        tk.Label(self, text='Node:').grid(row=0, column=1, sticky='W')
-        self.node_entry = AutocompleteEntry(self.canvas.dataG.nodes,
-                                            width=12)
+        r = 0   # Current row
+        tk.Label(self, text='Nodes:').grid(row=r, column=1, sticky='W')
+        self.node_entry = AutocompleteEntry(self.canvas.dataG.nodes)
         self.node_entry.bind('<Return>',self.add_node, add='+')
-        self.node_entry.grid(row=0, column=2, columnspan=2, sticky='NESW', pady=2)
+        self.node_entry.grid(row=r, column=2, columnspan=2, sticky='NESW', pady=2)
         tk.Button(self, text='+', command=self.add_node, width=2).grid(
-            row=0, column=4,sticky=tk.NW,padx=2,pady=2)
+            row=r, column=4,sticky=tk.NW,padx=2,pady=2)
 
+        r += 1
         nlsb = tk.Scrollbar(self, orient=tk.VERTICAL)
         self.node_list = tk.Listbox(self, yscrollcommand=nlsb.set, height=5)
-        self.node_list.grid(row=1, column=1, columnspan=3, sticky='NESW')
+        self.node_list.grid(row=r, column=1, columnspan=3, sticky='NESW')
         self.node_list.bind('<Delete>',lambda e: self.node_list.delete(tk.ANCHOR))
         nlsb.config(command=self.node_list.yview)
-        nlsb.grid(row=1, column=4, sticky='NWS')
+        nlsb.grid(row=r, column=4, sticky='NWS')
 
-
-        tk.Label(self, text='Filter:').grid(row=2, column=1, sticky=tk.NW)
-        self.filter_key = tk.Entry(self, width=10)
-        self.filter_key.grid(row=3, column=1, sticky='NSW')
-        filter_op_var = tk.StringVar(self, '=')
-        self.filter_op = tk.OptionMenu(self, filter_op_var, "=", '!=', ">",
-                                       ">=", "<", "<=", "in", "not in")
-        self.filter_op.var = filter_op_var
-        self.filter_op.config(width=4)
-        self.filter_op.grid(row=3, column=2, sticky='N')
-        self.filter_value = tk.Entry(self, width=10)
-        self.filter_value.grid(row=3, column=3, sticky='NSW')
-
-        tk.Label(self, text='Neighbors Until:').grid(row=4, column=1, columnspan=2, sticky=tk.NW)
-        self.nei_filter_key = tk.Entry(self, width=10)
-        self.nei_filter_key.grid(row=5, column=1, sticky='NSW')
-        nei_filter_op_var = tk.StringVar(self, '=')
-        self.nei_filter_op = tk.OptionMenu(self, nei_filter_op_var, "=", '!=',
-                                           ">",">=", "<", "<=", "in", "not in")
-        self.nei_filter_op.var = nei_filter_op_var
-        self.nei_filter_op.config(width=4)
-        self.nei_filter_op.grid(row=5, column=2, sticky='N')
-        self.nei_filter_value = tk.Entry(self, width=10)
-        self.nei_filter_value.grid(row=5, column=3, sticky='NSW')
-
-
-        tk.Label(self, text='Neighbors Levels:').grid(row=6, column=1, columnspan=2, sticky=tk.NW)
+        r += 1
+        tk.Label(self, text='Neighbors Levels:').grid(row=r, column=1,
+                                                    columnspan=2, sticky=tk.NW)
         self.level_entry = tk.Entry(self, width=4)
         self.level_entry.insert(0,'1')
-        self.level_entry.grid(row=6, column=3, sticky=tk.NW, padx=5)
+        self.level_entry.grid(row=r, column=3, sticky=tk.NW, padx=5)
 
+        r += 1
         tk.Button(self, text='Build New', command=self.onBuildNew).grid(
-            row=7, column=1)
+            row=r, column=1)
         tk.Button(self, text='Add to Existing', command=self.onAddToExisting
-                  ).grid(row=7, column=2, columnspan=2)
+                  ).grid(row=r, column=2, columnspan=2)
 
-
-
+        r += 1
         line = tk.Canvas(self, height=15, width=200)
         line.create_line(0,13,250,13)
         line.create_line(0,15,250,15)
-        line.grid(row=8, column=1, columnspan=5, sticky='NESW')
+        line.grid(row=r, column=1, columnspan=4, sticky='NESW')
+
+        r += 1
+        tk.Label(self, text='Filters:').grid(row=r, column=1, sticky=tk.W)
+        self.filter_entry = tk.Entry(self)
+        self.filter_entry.bind('<Return>',self.add_filter, add='+')
+        self.filter_entry.grid(row=r, column=2, columnspan=2, sticky='NESW', pady=2)
+        tk.Button(self, text='+', command=self.add_filter, width=2).grid(
+            row=r, column=4,sticky=tk.NW,padx=2,pady=2)
+
+        r += 1
+        flsb = tk.Scrollbar(self, orient=tk.VERTICAL)
+        self.filter_list = tk.Listbox(self, yscrollcommand=flsb.set, height=5)
+        self.filter_list.grid(row=r, column=1, columnspan=3, sticky='NESW')
+        self.filter_list.bind('<Delete>',self.remove_filter)
+        flsb.config(command=self.node_list.yview)
+        flsb.grid(row=r, column=4, sticky='NWS')
+
+        r += 1
+        tk.Button(self, text='Clear',command=self.remove_filter).grid(
+                    row=r, column=1, sticky='W')
+        tk.Button(self, text='?', command=self.filter_help
+                  ).grid(row=r, column=4, stick='NESW', padx=2)
+
+
+        r += 1
+        line2 = tk.Canvas(self, height=15, width=200)
+        line2.create_line(0,13,250,13)
+        line2.create_line(0,15,250,15)
+        line2.grid(row=r, column=1, columnspan=4, sticky='NESW')
+
+        r += 1
         self.lbl_attr = tk.Label(self, text='Attributes',
                                  wraplength=200, anchor=tk.SW, justify=tk.LEFT)
-        self.lbl_attr.grid(row=9, column=1, columnspan=4, sticky='NW')
+        self.lbl_attr.grid(row=r, column=1, columnspan=4, sticky='NW')
 
+        r += 1
         self.tbl_attr = PropertyTable(self, {})
-        self.tbl_attr.grid(row=10, column=1, columnspan=4, sticky='NESW')
+        self.tbl_attr.grid(row=r, column=1, columnspan=4, sticky='NESW')
+
+        assert r == bottom_row, "Set bottom_row to %d" % r
 
         self._build_menu()
 
@@ -144,6 +156,45 @@ class ViewerApp(tk.Tk):
             self.node_entry.delete(0, tk.END)
         else:
             tkm.showerror("Node not found", "Node '%s' not in graph."%node)
+
+    def add_filter(self, event=None, filter_lambda=None):
+        if filter_lambda is None:
+            filter_lambda = self.filter_entry.get()
+
+        if self.canvas.add_filter(filter_lambda):
+            # We successfully added the filter; add to list and clear entry
+            self.filter_list.insert(tk.END, filter_lambda)
+            self.filter_entry.delete(0, tk.END)
+
+    def filter_help(self, event=None):
+        msg = ("Enter a lambda function which returns True if you wish\n"
+               "to show nodes with ONLY a given property.\n"
+               "Parameters are:\n"
+               "  - u, the node's name, and \n"
+               "  - d, the data dictionary.\n\n"
+               "Example: \n"
+               " d.get('color',None)=='red'\n"
+               "would show only red nodes.\n"
+               "Example 2:\n"
+               " str(u).is_digit()\n"
+               "would show only nodes which have a numerical name.\n\n"
+               "Multiple filters are ANDed together.")
+        tkm.showinfo("Filter Condition", msg)
+    def remove_filter(self, event=None):
+        all_items = self.filter_list.get(0, tk.END)
+        if event is None:
+            # When no event passed, this function was called via the "clear"
+            # button.
+            items = all_items
+        else:
+            # Remove currently selected item
+            items = (self.filter_list.get(tk.ANCHOR),)
+
+        for item in items:
+            self.canvas.remove_filter(item)
+            idx = all_items.index(item)
+            self.filter_list.delete(idx)
+
 
     def grow_all(self):
         """Grow all visible nodes one level"""

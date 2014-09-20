@@ -28,6 +28,21 @@ G.node['a']['fill'] = 'white'
 G.node['a']['dash'] = (2,2)
 G.node[2]['label_fill'] = 'blue'
 G.node[2]['label_text'] = 'LOOOOOONG'
+
+### Filter example
+for n in G.nodes_iter():
+    G.node[n]['real'] = True
+
+# Now we're going to add a couple of "fake" nodes; IE, nodes
+#  that should be not be displayed because they are not in the filter.
+#  If they do show up, they'll cause us to fail some of the base checks
+G.add_edge('out','fake1')
+G.add_edge('a','fake2')
+G.add_edge('qqqq','fake3')
+G.add_edge('fake3','fake4')
+G.add_node('fake_alone')
+###
+
 app = Viewer(G, home_node='a', levels=2)
 #app = GraphViewerApp(G, home_node='a', levels=2)
 app.mainloop()

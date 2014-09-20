@@ -57,6 +57,9 @@ class GraphCanvas(tk.Canvas):
         # This data is used to track panning objects (x,y coords)
         self._pan_data = (None, None)
 
+        # List of filters to run whenever trying to add a node to the graph
+        self._node_filters = []
+
         # Create a display version of this graph
         # If requested, plot only within a certain level of the home node
         home_node = kwargs.pop('home_node', None)
@@ -103,8 +106,14 @@ class GraphCanvas(tk.Canvas):
         """Draw edge(s).  u and v are from self.dataG"""
 
         # Find display nodes asoccoiated with these data nodes
-        frm_disp = self._find_disp_node(u)
-        to_disp = self._find_disp_node(v)
+        try:
+            frm_disp = self._find_disp_node(u)
+            to_disp = self._find_disp_node(v)
+        except NodeFiltered:
+            # We're hiding one of the side of the edge.  That's ok,
+            # just return silently
+            return
+
 
         if isinstance(self.dataG, nx.MultiGraph):
             edges = self.dataG.edge[u][v]
@@ -146,6 +155,20 @@ class GraphCanvas(tk.Canvas):
         """Create a token for the data_node at the given coordinater"""
         (x,y) = coord
         data = self.dataG.node[data_node]
+
+        # Apply filter to node to make sure we should draw it
+        for filter_lambda in self._node_filters:
+            try:
+                draw_flag = eval(filter_lambda, {'u':data_node, 'd':data})
+            except Exception as e:
+                self._show_filter_error(filter_lambda, e)
+                return
+            # Filters are applied as an AND (ie, all must be true)
+            # So if one is false, exit
+            if draw_flag == False:
+                return
+
+        # Create token and draw node
         token = self._NodeTokenClass(self, data, data_node)
         id = self.create_window(x, y, window=token, anchor=tk.CENTER,
                                   tags='node')
@@ -217,6 +240,39 @@ class GraphCanvas(tk.Canvas):
                     # We know know what nodes to remove from the display graph
                     #  to remove the radial string
                     return ns
+
+    def add_filter(self, filter_lambda):
+        # Evaluate filter against all currently displayed nodes.  If
+        #  any of them do not pass, hide them
+        nodes_to_hide = []
+        for n, d in self.dispG.nodes_iter(data=True):
+            dataG_id = d['dataG_id']
+            try:
+                show_flag = eval(filter_lambda,
+                             {'u':dataG_id, 'd':self.dataG.node[dataG_id]})
+            except Exception as e:
+                self._show_filter_error(filter_lambda, e)
+                return False
+            if show_flag == False:
+                nodes_to_hide.append(n)
+
+        # Hide the nodes
+        for n in nodes_to_hide:
+            self.hide_node(n)
+
+        # Add this filter to the filter list so that any future plots include
+        # this filter
+        self._node_filters.append(filter_lambda)
+        return True
+
+    def remove_filter(self, filter_lambda):
+        self._node_filters.remove(filter_lambda)
+
+    def _show_filter_error(self, filter_lambda, e):
+        tkm.showerror("Invalid Filter",
+              "Evaluating the filter lambda function\n" +
+              filter_lambda + "\n\nraised the following " +
+              "exception:\n\n" + str(e))
 
     def onPanStart(self, event):
         self._pan_data = (event.x, event.y)
@@ -414,7 +470,6 @@ class GraphCanvas(tk.Canvas):
             if len(grow_nodes) == 0:
                 # Start out next iteration with the entire graph
                 grow_nodes = existing_data_nodes.copy()
-                print('expanding to whole graph for search')
                 continue
             for u in grow_nodes:
                 d = self.dataG.node[u]
@@ -778,6 +833,20 @@ class GraphCanvas(tk.Canvas):
                     if d['dataG_id'] == data_node]
 
         if len(disp_node) == 0:
+            # It could be that this node is not displayed because it is
+            #  currently being filtered out.  Test for that and, if true,
+            #  raise a NodeFiltered exception
+            for f in self._node_filters:
+                try:
+                    show_flag = eval(f, {'u':data_node,
+                                         'd':self.dataG.node[data_node]})
+                except Exception as e:
+                    # Usually we we would alert user that eval failed, but
+                    #  in this case, we're doing this without their knowlage
+                    #  so we're just going to die silently
+                    break
+                if show_flag == False:
+                    raise NodeFiltered
             raise ValueError("Data Node '%s' is not currently displayed"%\
                                 data_node)
         elif len(disp_node) != 1:
@@ -969,6 +1038,9 @@ class GraphCanvas(tk.Canvas):
             t-=dt
             ###pos=_rescale_layout(pos)
         return pos
+
+class NodeFiltered(Exception):
+    pass
 
 def flatten(l):
     try:
