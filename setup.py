@@ -4,7 +4,7 @@ import sys, os
 # python setup.py check
 # python.exe setup.py --long-description | rst2html.py > dummy.html
 
-# To upldate to PyPI test server
+# To upload to PyPI test server
 #   http://peterdowns.com/posts/first-time-with-pypi.html
 # python setup.py register -r pypitest
 # python setup.py sdist upload -r pypitest
@@ -23,12 +23,15 @@ you to:
 
   - Drag nodes around to tune the default layout
   - Show and hide nodes
+  - Filter nodes
   - Pan and zoom
   - Display nodes only within a certain number of hops ("levels") of
     a "home node"
   - Display and highlight the shortest path between two nodes.  Nodes
     around the path can also be displayed within a settable number of
     levels
+  - Intelligently find and display nodes near displayed nodes using
+    "Grow" and "Grow Until" functions
   - Use attributes stored in the graph's node and edge dictionaries to
     customize the appearance of the node and edge tokens in the GUI
   - Mark nodes and edges for reference

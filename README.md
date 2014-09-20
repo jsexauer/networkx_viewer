@@ -13,18 +13,21 @@ you to:
 
   - Drag nodes around to tune the default layout
   - Show and hide nodes
+  - Filter nodes
   - Pan and zoom
   - Display nodes only within a certain number of hops ("levels") of
     a "home node"
   - Display and highlight the shortest path between two nodes.  Nodes
     around the path can also be displayed within a settable number of
     levels
+  - Intelligently find and display nodes near displayed nodes using
+    "Grow" and "Grow Until" functions
   - Use attributes stored in the graph's node and edge dictionaries to
     customize the appearance of the node and edge tokens in the GUI
   - Mark nodes and edges for reference
   - Support for both `nx.Graph` and `nx.MultiGraph`
 
-A typical usage would be:
+A typical usage might be:
 ```python
 import networkx as nx
 from networkx_viewer import Viewer
@@ -55,7 +58,7 @@ following.
 pip install networkx_viewer
 ```
 
-NetworkX Viewer requires NetworkX version 1.4 or greater.
+NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 1.4 or greater.
 
 
 Using the GUI
@@ -71,10 +74,43 @@ You can specify a subgraph to display using:
 app = Viewer(G, home_node='a', levels=1)
 ```
 
+### Constructing a plot
+
+On the right of the screen is a box to enter node(s) to graph.
+  - If you enter a single node, that node plus nodes upto "Neighbor Levels"
+    levels will be ploted.
+  - If you enter a pair of nodes, the shortest path between the nodes will
+    be found.  Neighbors around the path upto "Neighbor Levels" will also
+    be plotted
+  - If you enter three or more nodes, all those nodes will graphed out to
+    "Neighbor Levels"
+
+You may either "Build New" or "Add to Existing."  If you choose to add to the
+existing plot, and a path exists between the new node and your existing display
+island, you will be prompted if you'd like the program to plot the intermediate
+nodes.
+
+### Right-click functionality
+
 Several actions can be taken by right-clicking on nodes and edges, including
   - *Grow:* Display all nodes connected to this node that may not be
     currently displayed.  A node which does not have all of its neighbors
     currently displayed will have a grey label.
+  - *Grow Until:* This lets you find the path between this node and a node
+    with a desired attribute.  This is done by provided a lambda function
+    which may accept the following arguments:
+    - `u` - Name of the Node
+    - `d` - The data dictionary for the node (ie, the contents of `G.node[u]`)
+
+    Say we had a graph which has nodes which are actors and
+    edges which are the movie the two actors were both in.  A
+    [classic example](http://en.wikipedia.org/wiki/Six_Degrees_of_Kevin_Bacon)
+    might be to use the lambda function:
+    ```python
+    u=='Kevin Bacon'
+    ```
+    to find who the degrees of seperation are between the right-clicked actor
+    and Kevin Bacon.
   - *Hide*
   - *Hide Behind:* Hide radial sections of the graph that are behind the edge
     formed by the node the cursor is currently over and the node in the menu.
@@ -84,10 +120,29 @@ Several actions can be taken by right-clicking on nodes and edges, including
 You can also simply hover over a node and press the shortcut key ("G" for
 grow, "H" for hide, etc...) to activate the action.
 
-At the bottom of the screen is a box to enter a node to graph
-just that node.  If you wish to plot the shortest path between two nodes, enter
-their names in the two boxes.  The Levels box indicates how many levels away
-from the node(s) to display.
+### Filtering
+You can filter the nodes to display based on the attributes a node possess.
+This is done in a simmilar manner to how *Grow Until* works, as described above.
+You must write a lambda function which accepts the following paramaters:
+ - `u` - Name of the Node
+ - `d` - The data dictionary for the node (ie, the contents of `G.node[u]`)
+
+When this lambda function evaluates to `False`, the node is hidden, otherwise
+the node is displayed.  Multiple Filters are ANDed together.
+
+### Node and Edge Attributes
+The attributes (ie, the dictionary stored in `G.node[u]` and `G.edge[u][v]`)
+are displayed in the lower-right section of the screen.
+
+At this time, neither the attributes not the graph's nodes/edges themselves
+are editable through the GUI.  The GUI is read-only.  You should programatically
+create/update the graph by doing the following:
+```python
+G = app.canvas.dataG
+# code to edit graph
+app.canvas.refresh()
+
+```
 
 Using the Tk Pass-through
 -------------------------
@@ -171,7 +226,7 @@ app.mainloop()
 
 Development Status
 ==================
-As of July 2014, networkx_viewer is under active development.  Bugs or feature
+As of September 2014, networkx_viewer is under active development.  Bugs or feature
 requests should be submitted to the
 [github issue tracker](https://github.com/jsexauer/networkx_viewer/issues).
 
