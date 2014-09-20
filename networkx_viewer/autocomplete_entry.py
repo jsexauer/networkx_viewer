@@ -54,7 +54,7 @@ class AutocompleteEntry(Entry):
             words = self.comparison()
             if words:
                 if not self.listboxUp:
-                    self.listbox = Listbox(height=self.listboxLength)
+                    self.listbox = Listbox(self.master, height=self.listboxLength)
                     self.listbox.bind("<Button-1>", self.selection)
                     self.listbox.bind("<Right>", self.selection)
                     self.listbox.bind("<Return>", self.selection)

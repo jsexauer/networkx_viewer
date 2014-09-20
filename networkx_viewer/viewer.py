@@ -129,7 +129,7 @@ class ViewerApp(tk.Tk):
         self.menubar.add_cascade(label='View', menu=view)
 
     def center_on_node(self):
-        node = tkd.askstring("Node Name", "Name of node to center on:")
+        node = NodeDialog(self, "Name of node to center on:").result
         if node is None: return
         self.canvas.center_on_node(node)
 
@@ -351,3 +351,39 @@ class PropertyTable(tk.Frame):
             # update the inner frame's width to fill the canvas
             self.canvas.itemconfigure(self.interior_id, width=self.canvas.winfo_width())
 
+
+class NodeDialog(tk.Toplevel):
+    def __init__(self, main_window, msg='Please enter a node:'):
+        tk.Toplevel.__init__(self)
+        self.main_window = main_window
+        self.title('Node Entry')
+        self.geometry('170x160')
+        self.rowconfigure(3, weight=1)
+
+        tk.Label(self, text=msg).grid(row=0, column=0, columnspan=2,
+                                      sticky='NESW',padx=5,pady=5)
+        self.posibilities = [d['dataG_id'] for n,d in
+                    main_window.canvas.dispG.nodes_iter(data=True)]
+        self.entry = AutocompleteEntry(self.posibilities, self)
+        self.entry.bind('<Return>', lambda e: self.destroy(), add='+')
+        self.entry.grid(row=1, column=0, columnspan=2, sticky='NESW',padx=5,pady=5)
+
+        tk.Button(self, text='Ok', command=self.destroy).grid(
+            row=3, column=0, sticky='ESW',padx=5,pady=5)
+        tk.Button(self, text='Cancel', command=self.cancel).grid(
+            row=3, column=1, sticky='ESW',padx=5,pady=5)
+
+        # Make modal
+        self.winfo_toplevel().wait_window(self)
+
+
+    def destroy(self):
+        res = self.entry.get()
+        if res not in self.posibilities:
+            res = None
+        self.result = res
+        tk.Toplevel.destroy(self)
+
+    def cancel(self):
+        self.entry.delete(0,tk.END)
+        self.destroy()
