@@ -60,7 +60,7 @@ class NodeToken(tk.Canvas):
         """Returns True if all edges have been drawn"""
         return self._complete
 
-    def customize_menu(self, menu):
+    def customize_menu(self, menu, item):
         """Ovewrite this method to customize the menu this token displays
         when it is right-clicked"""
         pass
