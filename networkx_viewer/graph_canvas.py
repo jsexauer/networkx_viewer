@@ -600,8 +600,25 @@ class GraphCanvas(tk.Canvas):
     def replot(self):
         """Replot existing nodes, hopefully providing a better layout"""
         nodes = [d['dataG_id'] for n, d in self.dispG.nodes_iter(data=True)]
+
+        # Remember which nodes and edges were marked
+        nodes_marked = [d['dataG_id']
+                        for n, d in self.dispG.nodes_iter(data=True)
+                        if d['token'].is_marked]
+        edges_marked = [d['dataG_id']
+                        for u,v,k,d in self.dispG.edges_iter(data=True, keys=True)
+                        if d['token'].is_marked]
+        # Replot
         self.clear()
         self.plot(nodes, levels=0)
+
+        # Remark
+        for n in nodes_marked:
+            self.mark_node(self._find_disp_node(n))
+        edge_map = {d['dataG_id']: (u,v,k)
+                    for u,v,k,d in self.dispG.edges_iter(data=True, keys=True)}
+        for dataG_id in edges_marked:
+            self.mark_edge(*edge_map[dataG_id])
 
     def refresh(self):
         """Redrawn nodes and edges, updating any display attributes that
@@ -767,9 +784,6 @@ class GraphCanvas(tk.Canvas):
             raise AssertionError("Data node '%s' is displayed multiple "
                                     "times" % data_node)
         return disp_node[0]
-
-#    def create_layout(self, G, pos=None, fixed=None, scale=1.0):
-#        return nx.spring_layout(G, scale=scale)
 
     def create_layout(self, G, pos=None, fixed=None, scale=1.0,
                       min_distance=None):

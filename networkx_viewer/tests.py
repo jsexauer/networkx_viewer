@@ -257,6 +257,36 @@ class TestGraphCanvas(unittest.TestCase):
         # All connected together
         self.assertEqual(nx.number_connected_components(self.a.dispG), 1)
 
+    def test_replot_keep_marked(self):
+        # Make sure the marked status of a node and edge is maintained
+        #  through a replot
+        c = self.a._find_disp_node('c')
+        out = self.a._find_disp_node('out')
+
+        # Mark edge c-out and node out
+        c_token = self.a.dispG.node[c]['token']
+        out_token = self.a.dispG.node[out]['token']
+        edge_token = self.a.dispG.edge[c][out][0]['token']
+        self.a.mark_edge(c, out, 0)
+        self.a.mark_node(out)
+        self.assertEqual(edge_token.is_marked, True)
+        self.assertEqual(c_token.is_marked, False)
+        self.assertEqual(out_token.is_marked, True)
+
+        # Replot
+        self.a.replot()
+
+        # Ensure markings still hold
+        c = self.a._find_disp_node('c')
+        out = self.a._find_disp_node('out')
+        c_token = self.a.dispG.node[c]['token']
+        out_token = self.a.dispG.node[out]['token']
+        edge_token = self.a.dispG.edge[c][out][0]['token']
+        self.assertEqual(edge_token.is_marked, True)
+        self.assertEqual(c_token.is_marked, False)
+        self.assertEqual(out_token.is_marked, True)
+
+
 class TestGraphCanvasTkPassthrough(TestGraphCanvas):
     # We inherit for the base tester to make sure we continue to
     #  provide at least that level of functionality
