@@ -9,6 +9,7 @@ Released under the GNU General Public License (GPL)
 """
 from math import atan2, pi, cos, sin
 import collections
+import pickle
 try:
     # Python 3
     import tkinter as tk
@@ -23,6 +24,20 @@ except ImportError:
 import networkx as nx
 
 from networkx_viewer.tokens import NodeToken, EdgeToken
+
+from functools import wraps
+def undoable(func):
+    """Wrapper to create a savepoint which can be revered to using the
+    GraphCanvas.undo method."""
+    @wraps(func)
+    def _wrapper(*args, **kwargs):
+        # First argument should be the graphcanvas object (ie, "self")
+        self = args[0]
+        self._undo_states.append(self.dump_visualization())
+        # Anytime we do an undoable action, the redo tree gets wiped
+        self._redo_states = []
+        func(*args, **kwargs)
+    return _wrapper
 
 class GraphCanvas(tk.Canvas):
     """Expandable GUI to plot a NetworkX Graph"""
@@ -59,6 +74,10 @@ class GraphCanvas(tk.Canvas):
 
         # List of filters to run whenever trying to add a node to the graph
         self._node_filters = []
+
+        # Undo list
+        self._undo_states = []
+        self._redo_states = []
 
         # Create a display version of this graph
         # If requested, plot only within a certain level of the home node
@@ -274,6 +293,7 @@ class GraphCanvas(tk.Canvas):
               filter_lambda + "\n\nraised the following " +
               "exception:\n\n" + str(e))
 
+    @undoable
     def onPanStart(self, event):
         self._pan_data = (event.x, event.y)
         self.winfo_toplevel().config(cursor='fleur')
@@ -323,7 +343,7 @@ class GraphCanvas(tk.Canvas):
             self.coords(data['token_id'], (from_xy+spline_xy+to_xy))
 
 
-
+    @undoable
     def onNodeButtonPress(self, event):
         """Being drag of an object"""
         # record the item and its location
@@ -431,7 +451,7 @@ class GraphCanvas(tk.Canvas):
         elif cmd == 'M':
             self.mark_node(item)
 
-
+    @undoable
     def grow_node(self, disp_node, levels=1):
         data_node = self.dispG.node[disp_node]['dataG_id']
 
@@ -439,6 +459,7 @@ class GraphCanvas(tk.Canvas):
 
         self._plot_additional(grow_graph.nodes())
 
+    @undoable
     def grow_until(self, disp_node, stop_condition=None, levels=0):
 
         # Find condition to stop growing
@@ -497,7 +518,7 @@ class GraphCanvas(tk.Canvas):
         # Find shortest path to stop_node
         self.plot_path(data_node, stop_node, levels=levels, add_to_exsting=True)
 
-
+    @undoable
     def hide_node(self, disp_node):
 
         # Remove all the edges from display
@@ -512,11 +533,13 @@ class GraphCanvas(tk.Canvas):
 
         self._graph_changed()
 
+    @undoable
     def mark_node(self, disp_node):
         """Mark a display node"""
         token = self.dispG.node[disp_node]['token']
         token.mark()
 
+    @undoable
     def center_on_node(self, data_node):
         """Center canvas on given **DATA** node"""
         try:
@@ -579,6 +602,7 @@ class GraphCanvas(tk.Canvas):
         self.delete(edge_id)
         self._graph_changed()
 
+    @undoable
     def mark_edge(self, disp_u, disp_v, key):
         token = self.dispG[disp_u][disp_v][key]['token']
         token_id = self.dispG[disp_u][disp_v][key]['token_id']
@@ -592,6 +616,7 @@ class GraphCanvas(tk.Canvas):
         self.delete(tk.ALL)
         self.dispG.clear()
 
+    @undoable
     def plot(self, home_node, levels=1):
         """Plot node (from dataG) out to levels.  home_node can be list of nodes."""
         graph = self._neighbors(home_node, levels=levels)
@@ -602,6 +627,7 @@ class GraphCanvas(tk.Canvas):
         else:
             self.center_on_node(home_node)
 
+    @undoable
     def plot_additional(self, home_nodes, levels=0):
         """Add nodes to existing plot.  Prompt to include link to existing
         if possible.  home_nodes are the nodes to add to the graph"""
@@ -653,6 +679,72 @@ class GraphCanvas(tk.Canvas):
         # Plot the new nodes
         self._plot_additional(new_nodes)
 
+    def dump_visualization(self):
+        """Record currently visable nodes, their position, and their widget's
+        state.  Used by undo functionality and to memorize speicific displays"""
+
+        ans = self.dispG.copy()
+
+        # Add current x,y info to the graph
+        for n, d in ans.nodes_iter(data=True):
+            (d['x'],d['y']) = self.coords(d['token_id'])
+
+        # Pickle the whole thing up
+        ans = pickle.dumps(ans)
+
+        return ans
+
+    def load_visualization(self, dump):
+        """Load a visualization as created by dump_visulaization method"""
+        # Unpickle string into nx graph
+        G = pickle.loads(dump)
+
+        # Clear us and rebuild
+        self.clear()
+        for n, d in G.nodes_iter(data=True):
+            id = self._draw_node((d['x'],d['y']), d['dataG_id'])
+            state = d['token'].__getstate__()
+            self.dispG.node[id]['token']._setstate(state)
+
+        for u, v in set(G.edges_iter()):
+            # Find dataG ids from old dispG
+            uu = G.node[u]['dataG_id']
+            vv = G.node[v]['dataG_id']
+            self._draw_edge(uu,vv)
+
+            state = d['token'].__getstate__()
+            self.dispG.node[id]['token']._setstate(state)
+
+            # Find new dispG ids from dataG ids
+            uuu = self._find_disp_node(uu)
+            vvv = self._find_disp_node(vv)
+
+            # Set state for the new edge(s)
+            for k, ed in self.dispG.edge[uuu][vvv].items():
+                state = G.edge[u][v][k]['token'].__getstate__()
+                ed['token']._setstate(state)
+
+        self.refresh()
+
+    def undo(self):
+        """Undoes the last action marked with the undoable decorator"""
+        try:
+            state = self._undo_states.pop()
+        except IndexError:
+            # No undoable states (empty list)
+            return
+        self._redo_states.append(self.dump_visualization())
+        self.load_visualization(state)
+
+    def redo(self):
+        try:
+            state = self._redo_states.pop()
+        except IndexError:
+            # No redoable states
+            return
+        self.load_visualization(state)
+
+    @undoable
     def replot(self):
         """Replot existing nodes, hopefully providing a better layout"""
         nodes = [d['dataG_id'] for n, d in self.dispG.nodes_iter(data=True)]
@@ -701,7 +793,7 @@ class GraphCanvas(tk.Canvas):
         self._graph_changed()
 
 
-
+    @undoable
     def plot_path(self, frm_node, to_node, levels=1, add_to_exsting=False):
         """Plot shortest path between two nodes"""
         try:

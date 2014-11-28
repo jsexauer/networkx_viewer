@@ -78,6 +78,30 @@ class NodeToken(tk.Canvas):
             return func(event)
         return _wrapper
 
+    def __getstate__(self):
+        """Because the token object is a live tk object, we must save our
+        state variables and reconstruct ourselves instead of letting python
+        try to automatically pickle us"""
+        ans = {
+            '_complete': self._complete,
+            '_default_bg': self._default_bg,
+            '_marked': self._marked,
+        }
+        return ans
+
+
+    def _setstate(self, state):
+        """Set state from pickle.  See __getstate__ for details. Not
+        __setstate__ because this must be a live tk object to work and python
+        could call __setstate__ on an "undead" object."""
+        for k,v in state.items():
+            setattr(self, k, v)
+
+        # Make sure we display our marked status
+        if state['_marked']:
+            self._marked = False    # Have to undo what we did in for loop above
+            self.mark()
+
 class EdgeToken(object):
     def __init__(self, edge_data):
         """This object mimics a token for the edges.  All of this class's
@@ -110,6 +134,28 @@ class EdgeToken(object):
         """Ovewrite this method to customize the menu this token displays
         when it is right-clicked"""
         pass
+
+    def __getstate__(self):
+        """Because the token object is a live tk object, we must save our
+        state variables and reconstruct ourselves instead of letting python
+        try to automatically pickle us"""
+        ans = {
+            '_marked': self._marked,
+        }
+        return ans
+
+    def _setstate(self, state):
+        """Set state from pickle.  See __getstate__ for details. Not
+        __setstate__ because this must be a live tk object to work and python
+        could call __setstate__ on an "undead" object."""
+        for k,v in state.items():
+            setattr(self, k, v)
+
+        # Make sure we display our marked status
+        if state['_marked']:
+            self._marked = False    # Have to undo what we did in for loop above
+            self.mark()
+
 
 class TkPassthroughNodeToken(NodeToken):
     def render(self, data, node_name):
@@ -150,17 +196,15 @@ class TkPassthroughNodeToken(NodeToken):
 
     def mark_complete(self):
         """Called by host canvas when all of my edges have been drawn"""
-        if not self._complete:
-            self._complete = True
-            self.itemconfig(self.marker, outline='black')
-            self.itemconfig(self.label, fill='black')
+        self._complete = True
+        self.itemconfig(self.marker, outline='black')
+        self.itemconfig(self.label, fill='black')
 
     def mark_incomplete(self):
         """Called by host canvas when all of my edges have not been drawn"""
-        if self._complete:
-            self._complete = False
-            self.itemconfig(self.marker, outline='')
-            self.itemconfig(self.label, fill='grey')
+        self._complete = False
+        self.itemconfig(self.marker, outline='')
+        self.itemconfig(self.label, fill='grey')
 
 
 class TkPassthroughEdgeToken(EdgeToken):

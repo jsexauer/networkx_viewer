@@ -118,6 +118,10 @@ class ViewerApp(tk.Tk):
         self.config(menu=self.menubar)
 
         view = tk.Menu(self.menubar, tearoff=0)
+        view.add_command(label='Undo', command=self.canvas.undo, accelerator="Ctrl+Z")
+        self.bind_all("<Control-z>", lambda e: self.canvas.undo())  # Implement accelerator
+        view.add_command(label='Redo', command=self.canvas.redo)
+        view.add_separator()
         view.add_command(label='Center on node...', command=self.center_on_node)
         view.add_separator()
         view.add_command(label='Reset Node Marks', command=self.reset_node_markings)
