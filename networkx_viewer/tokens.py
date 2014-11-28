@@ -158,6 +158,13 @@ class EdgeToken(object):
 
 
 class TkPassthroughNodeToken(NodeToken):
+    def __init__(self, *args, **kwargs):
+        self._default_label_color = 'black'
+        self._default_outline_color = 'black'
+
+        NodeToken.__init__(self, *args, **kwargs)
+
+
     def render(self, data, node_name):
         """Draw on canvas what we want node to look like.  If data contains
         keys that can configure a tk.Canvas oval, it will do so.  If data
@@ -174,12 +181,14 @@ class TkPassthroughNodeToken(NodeToken):
         for k,v in cfg.copy().items():
             cfg[k] = data.get(k, cfg[k][-1])
         self.itemconfig(self.marker, **cfg)
+        self._default_outline_color = data.get('outline',self._default_outline_color)
 
         # Modify the text label using options from data
         cfg = self.itemconfig(self.label)
         for k,v in cfg.copy().items():
             cfg[k] = data.get('label_'+k, cfg[k][-1])
         self.itemconfig(self.label, **cfg)
+        self._default_label_color = data.get('label_fill',self._default_label_color)
 
         # Figure out how big we really need to be
         bbox = self.bbox(self.label)
@@ -197,8 +206,8 @@ class TkPassthroughNodeToken(NodeToken):
     def mark_complete(self):
         """Called by host canvas when all of my edges have been drawn"""
         self._complete = True
-        self.itemconfig(self.marker, outline='black')
-        self.itemconfig(self.label, fill='black')
+        self.itemconfig(self.marker, outline=self._default_outline_color)
+        self.itemconfig(self.label, fill=self._default_label_color)
 
     def mark_incomplete(self):
         """Called by host canvas when all of my edges have not been drawn"""
