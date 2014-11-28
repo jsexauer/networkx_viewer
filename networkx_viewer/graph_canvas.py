@@ -548,6 +548,7 @@ class GraphCanvas(tk.Canvas):
 
         popup = tk.Menu(self, tearoff=0)
         popup.add_command(label='Mark', command=lambda: self.mark_edge(u,v,k))
+        d['token'].customize_menu(popup)
 
         try:
             popup.post(event.x_root, event.y_root)

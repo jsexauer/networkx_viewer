@@ -194,6 +194,7 @@ class ViewerApp(tk.Tk):
             self.canvas.remove_filter(item)
             idx = all_items.index(item)
             self.filter_list.delete(idx)
+            all_items = self.filter_list.get(0, tk.END)
 
 
     def grow_all(self):
