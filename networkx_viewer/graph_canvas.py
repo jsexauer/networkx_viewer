@@ -763,7 +763,6 @@ class GraphCanvas(tk.Canvas):
                         for u,v,k,d in self.dispG.edges_iter(data=True, keys=True)
                         if d['token'].is_marked]
         # Replot
-        self.clear()
         self.plot(nodes, levels=0)
 
         # Remark
