@@ -219,7 +219,6 @@ class ViewerApp(tk.Tk):
 
     def onBuildNew(self):
         nodes = self.get_node_list()
-        self.canvas.clear()
 
         if len(nodes) == 2:
             self.canvas.plot_path(nodes[0], nodes[1], levels=self.level)

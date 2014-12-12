@@ -33,10 +33,13 @@ def undoable(func):
     def _wrapper(*args, **kwargs):
         # First argument should be the graphcanvas object (ie, "self")
         self = args[0]
-        self._undo_states.append(self.dump_visualization())
-        # Anytime we do an undoable action, the redo tree gets wiped
-        self._redo_states = []
-        func(*args, **kwargs)
+        if not self._undo_suspend:
+            self._undo_suspend = True # Prevent chained undos
+            self._undo_states.append(self.dump_visualization())
+            # Anytime we do an undoable action, the redo tree gets wiped
+            self._redo_states = []
+            func(*args, **kwargs)
+            self._undo_suspend = False
     return _wrapper
 
 class GraphCanvas(tk.Canvas):
@@ -78,6 +81,7 @@ class GraphCanvas(tk.Canvas):
         # Undo list
         self._undo_states = []
         self._redo_states = []
+        self._undo_suspend = False
 
         # Create a display version of this graph
         # If requested, plot only within a certain level of the home node
@@ -619,6 +623,8 @@ class GraphCanvas(tk.Canvas):
     @undoable
     def plot(self, home_node, levels=1):
         """Plot node (from dataG) out to levels.  home_node can be list of nodes."""
+        self.clear()
+
         graph = self._neighbors(home_node, levels=levels)
         self._plot_graph(graph)
 
