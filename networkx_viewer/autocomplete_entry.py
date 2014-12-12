@@ -41,7 +41,7 @@ class AutocompleteEntry(Entry):
         self.bind("<Right>", self.selection)
         self.bind("<Up>", self.moveUp)
         self.bind("<Down>", self.moveDown)
-        self.bind("<Return>", self.selection)        
+        self.bind("<Return>", self.selection)
         
         self.listboxUp = False
  

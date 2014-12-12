@@ -40,6 +40,7 @@ class ViewerApp(tk.Tk):
         tk.Label(self, text='Nodes:').grid(row=r, column=1, sticky='W')
         self.node_entry = AutocompleteEntry(self.canvas.dataG.nodes)
         self.node_entry.bind('<Return>',self.add_node, add='+')
+        self.node_entry.bind('<Control-Return>', self.buildNewShortcut, add='+')
         self.node_entry.grid(row=r, column=2, columnspan=2, sticky='NESW', pady=2)
         tk.Button(self, text='+', command=self.add_node, width=2).grid(
             row=r, column=4,sticky=tk.NW,padx=2,pady=2)
@@ -231,10 +232,10 @@ class ViewerApp(tk.Tk):
         home_nodes = set(self.get_node_list())
         self.canvas.plot_additional(home_nodes, levels=self.level)
 
-
-
-
-
+    def buildNewShortcut(self, event=None):
+        # Add node intelligently then doe a build new
+        self.node_entry.event_generate('<Return>') # Resolve current
+        self.onBuildNew()
 
     def goto_path(self, event):
         frm = self.node_entry.get()
