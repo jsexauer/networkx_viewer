@@ -40,6 +40,8 @@ def undoable(func):
             self._redo_states = []
             func(*args, **kwargs)
             self._undo_suspend = False
+        else:
+            func(*args, **kwargs)
     return _wrapper
 
 class GraphCanvas(tk.Canvas):
