@@ -130,7 +130,7 @@ class GraphCanvas(tk.Canvas):
     def _draw_edge(self, u, v):
         """Draw edge(s).  u and v are from self.dataG"""
 
-        # Find display nodes asoccoiated with these data nodes
+        # Find display nodes associated with these data nodes
         try:
             frm_disp = self._find_disp_node(u)
             to_disp = self._find_disp_node(v)
@@ -167,9 +167,7 @@ class GraphCanvas(tk.Canvas):
             x2,y2 = self._node_center(to_disp)
             xa,ya = self._spline_center(x1,y1,x2,y2,m)
 
-            cfg = token.render()
-            l = self.create_line(x1,y1,xa,ya,x2,y2, tags='edge', smooth=True, **cfg)
-            self.dispG[frm_disp][to_disp][key]['token_id'] = l
+            token.render(host_canvas=self, coords=(x1,y1,xa,ya,x2,y2))
 
             if m > 0:
                 m = -m # Flip sides
@@ -346,7 +344,7 @@ class GraphCanvas(tk.Canvas):
                 to_xy = a[:]
             spline_xy = self._spline_center(*from_xy+to_xy+(data['m'],))
 
-            self.coords(data['token_id'], (from_xy+spline_xy+to_xy))
+            data['token'].coords((from_xy+spline_xy+to_xy))
 
 
     @undoable
@@ -397,10 +395,10 @@ class GraphCanvas(tk.Canvas):
             if edge['dispG_frm'] != from_node:
                 # Flip!
                 spline_xy = self._spline_center(*to_xy+from_xy+(edge['m'],))
-                self.coords(edge['token_id'], (to_xy+spline_xy+from_xy))
+                edge['token'].coords((to_xy+spline_xy+from_xy))
             else:
                 spline_xy = self._spline_center(*from_xy+to_xy+(edge['m'],))
-                self.coords(edge['token_id'], (from_xy+spline_xy+to_xy))
+                edge['token'].coords((from_xy+spline_xy+to_xy))
 
     def onTokenRightClick(self, event):
         item = self._get_id(event)
@@ -529,7 +527,7 @@ class GraphCanvas(tk.Canvas):
 
         # Remove all the edges from display
         for n, m, d in self.dispG.edges_iter(disp_node, data=True):
-            self.delete(d['token_id'])
+            d['token'].delete()
 
         # Remove the node from display
         self.delete(disp_node)
@@ -572,7 +570,7 @@ class GraphCanvas(tk.Canvas):
     def onEdgeRightClick(self, event):
         item = self._get_id(event, 'edge')
         for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
-            if d['token_id'] == item:
+            if d['token'].id == item:
                 break
 
         popup = tk.Menu(self, tearoff=0)
@@ -587,7 +585,7 @@ class GraphCanvas(tk.Canvas):
     def onEdgeClick(self, event):
         item = self._get_id(event, 'edge')
         for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
-            if d['token_id'] == item:
+            if d['token'].id == item:
                 break
         dataG_id = self.dispG.edge[u][v][k]['dataG_id']
         self.onEdgeSelected(dataG_id, self.dataG.get_edge_data(*dataG_id))
@@ -611,10 +609,7 @@ class GraphCanvas(tk.Canvas):
     @undoable
     def mark_edge(self, disp_u, disp_v, key):
         token = self.dispG[disp_u][disp_v][key]['token']
-        token_id = self.dispG[disp_u][disp_v][key]['token_id']
-
-        cfg = token.mark()
-        self.itemconfig(token_id, **cfg)
+        token.mark()
 
 
     def clear(self):
@@ -783,11 +778,9 @@ class GraphCanvas(tk.Canvas):
         # Edges
         for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
             token = d['token']
-            token_id = d['token_id']
             dataG_id = d['dataG_id']
             token.edge_data = self.dataG.get_edge_data(*dataG_id)
-            cfg = token.render()
-            self.itemconfig(token_id, cfg)
+            token.itemconfig()  # Refreshed edge's display
 
         # Nodes
         for u, d in self.dispG.nodes_iter(data=True):
