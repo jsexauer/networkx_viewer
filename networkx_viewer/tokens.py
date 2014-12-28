@@ -109,22 +109,65 @@ class EdgeToken(object):
         on the host canvas"""
         self.edge_data = edge_data
         self._marked = False
+        self._spline_id = None
+        self._host_canvas = None
 
-    def render(self):
+    def render(self, host_canvas, coords, cfg=None):
         """Called whenever canvas is about to draw an edge.
-        Must return dictionary of config options for create_line"""
+        The host_canvas will be the GraphCanvas object.
+        coords is a tuple of the following, use to display the spline which
+                    represents the edge.
+            - x1,y1 -- Position of the start of the spline
+            - xa,ya -- Position of the midpoint of spline
+            - x2,y2 -- Position of the end of teh spline
+        """
+        if cfg is None:
+            cfg = self.render_cfg()
+        # Amend config options to include options which must be included
+        cfg['tags'] = 'edge'
+        cfg['smooth'] = True
+        self._spline_id = host_canvas.create_line(*coords, **cfg)
+        self._host_canvas = host_canvas
+
+    def itemconfig(self, cfg=None):
+        """Update item config for underlying spline.  If cfg is none,
+        auto-regenerate cfg from render_cfg method"""
+        if cfg is None:
+            cfg = self.render_cfg()
+        assert self._host_canvas is not None, "Must draw using render method first"
+        self._host_canvas.itemconfig(self._spline_id, cfg)
+
+    def coords(self, coords):
+        """Update coordinates for spline."""
+        assert self._host_canvas is not None, "Must draw using render method first"
+        return self._host_canvas.coords(self._spline_id, coords)
+
+    def delete(self):
+        """Remove spline from canvas"""
+        self._host_canvas.delete(self._spline_id)
+
+    def render_cfg(self):
+        """Creates  config dict used by host canvas's create_line
+        method to draw the spline"""
         return {}
+
+    @property
+    def id(self):
+        """Returns id of spline drawn on host canvas"""
+        return self._spline_id
 
     def mark(self):
         """Return config dictionary when toggling mark status"""
         mark_width = 4.0
 
         self._marked = not self._marked
-
+        cfg = {}
         if self._marked:
-            return {'width': mark_width}
+            cfg = {'width': mark_width}
         else:
-            return {'width': 1.0}
+            cfg = {'width': 1.0}
+
+        self.itemconfig(cfg)
 
     @property
     def is_marked(self):
@@ -226,7 +269,7 @@ class TkPassthroughEdgeToken(EdgeToken):
     ]
     _marked_width = 4.0
 
-    def render(self):
+    def render_cfg(self):
         """Called whenever canvas is about to draw an edge.
         Must return dictionary of config options for create_line"""
         cfg = {}
@@ -241,7 +284,10 @@ class TkPassthroughEdgeToken(EdgeToken):
         """Return config dictionary when toggling marked status"""
         self._marked = not self._marked
 
+        cfg = {}
         if self._marked:
-            return {'width': self._marked_width}
+            cfg = {'width': self._marked_width}
         else:
-            return {'width': self._native_width}
+            cfg = {'width': self._native_width}
+
+        self.itemconfig(cfg)

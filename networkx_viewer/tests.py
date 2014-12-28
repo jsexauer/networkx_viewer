@@ -196,13 +196,13 @@ class TestGraphCanvas(unittest.TestCase):
 
         token = self.a.dispG.edge[c][out][0]['token']
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '1.0')
 
@@ -406,13 +406,13 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         token = self.a.dispG.edge[c][out][0]['token']
 
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token_id'])
+        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '3.0')
 
@@ -440,7 +440,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
 
         # Test edge a-c
         token = self.a.dispG.edge[a][c][0]['token']
-        token_id = self.a.dispG.edge[a][c][0]['token_id']
+        token_id = token.id
         cfg = self.a.itemconfig(token_id)
 
         chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
@@ -448,7 +448,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
 
         # Test edge out-c
         token = self.a.dispG.edge[out][c][0]['token']
-        token_id = self.a.dispG.edge[out][c][0]['token_id']
+        token_id = token.id
         cfg = self.a.itemconfig(token_id)
 
         self.assertEqual(cfg['fill'][-1], 'red')
@@ -470,7 +470,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         a = self.a._find_disp_node('a')
         c = self.a._find_disp_node('c')
 
-        token_id = self.a.dispG.edge[a][c][0]['token_id']
+        token_id = self.a.dispG.edge[a][c][0]['token'].id
         cfg = self.a.itemconfig(token_id)
         self.assertEqual(cfg['fill'][-1], 'magenta')
 
