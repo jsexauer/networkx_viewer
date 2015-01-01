@@ -318,15 +318,16 @@ class PropertyTable(tk.Frame):
         for c in self.interior.winfo_children():
             c.destroy()
 
-        def _make_pretty(value):
-            ans = str(value)
-            if len(ans) > 255:
-                ans = ans[:253] + '...'
-            return ans
-        property_dict = {_make_pretty(k): _make_pretty(v)
+
+        # Filter property dict
+        property_dict = {k: v for k, v in property_dict.items()
+                         if self._key_filter_function(k)}
+
+        # Prettify key/value pairs for display
+        property_dict = {self._make_key_pretty(k): self._make_value_pretty(v)
                             for k, v in property_dict.items()}
 
-        # Sort by key
+        # Sort by key and filter
         dict_values = sorted(property_dict.items(), key=lambda x: x[0])
 
         for n,(k,v) in enumerate(dict_values):
@@ -336,6 +337,51 @@ class PropertyTable(tk.Frame):
             tk.Label(self.interior, text=v, borderwidth=1,
                 wraplength=125, anchor=tk.W, justify=tk.LEFT).grid(
                 row=n, column=1, sticky='nesw', padx=1, pady=1, ipadx=1)
+
+    def _make_key_pretty(self, key):
+        """Make key of property dictionary displayable
+        Used by build function to make key displayable on the table.
+        Args:
+            key (object)
+            Key of property dictionary from dataG
+        Returns:
+            label (str)
+            String representation of key.  Might be made shorter or with
+            different name if desired.
+        """
+        return str(key)
+
+    def _make_value_pretty(self, value):
+        """Make key of property dictionary displayable
+        Used by build function to make key displayable on the table.
+        Args:
+            key (object)
+            Key of property dictionary from dataG
+        Returns:
+            label (str)
+            String representation of key.  Might be made shorter or with
+            different name if desired.
+        """
+        label = str(value)
+        if len(label) > 255:
+            label = label[:253] + '...'
+        return label
+
+    def _key_filter_function(self, key):
+        """Function to determine if key should be displayed.
+        Called by build for each key in the propery dict.  Overwrite
+        with your implementation if you want to hide specific keys (all
+        starting "_" for example).
+        Args:
+            key (object)
+            Key of property dictionary from dataG
+        Returns:
+            display (bool)
+            True if the key-value pair associate with this key should
+            be displayed
+        """
+        # Should be more specifically implemented when subclassed
+        return True # Show all keys
 
 
     def _configure_interior(self, event):
