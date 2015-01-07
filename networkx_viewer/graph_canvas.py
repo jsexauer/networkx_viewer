@@ -230,14 +230,52 @@ class GraphCanvas(tk.Canvas):
         if graph is None:
             graph = self.dataG
 
-        if isinstance(node, (list, tuple, set)):
-            neighbors = set(node)
-        else:
-            neighbors = set([node])
+        if not isinstance(node, (list, tuple, set)):
+            node = [node,]
+
+        neighbors = set(node)
+        blocks = [[n,] for n in node]
         for i in range(levels):
             for n in neighbors:
-                neighbors = set(graph.neighbors(n)).union(neighbors)
-        return graph.subgraph(neighbors)
+                new_neighbors = set(graph.neighbors(n)) - neighbors
+                blocks.append(new_neighbors)
+                neighbors = neighbors.union(new_neighbors)
+        G = graph.subgraph(neighbors)
+
+        if len(blocks) > 1:
+            # Create a block repersentation of our graph and make sure we're plotting
+            #  anything that connects the blocks too
+
+            # Create blocks for each individual node not already in a block
+            non_blocked = set(self.dataG.nodes()) - neighbors
+            non_blocked = [[a,] for a in non_blocked]
+
+            partitions = blocks + non_blocked
+
+            B = nx.blockmodel(graph, partitions)
+
+            # The resulting graph will has nodes numbered according their index in partitions
+            # We want to go through the partitions which are blocks and find the shortest path
+
+            num_blocks = len(blocks)
+            for frm_node, to_node in zip(range(num_blocks), range(1,num_blocks-1)):
+                try:
+                    path = nx.shortest_path(B, frm_node, to_node)
+                except nx.NetworkXNoPath as e:
+                    pass # In an island, which is permissible
+                except nx.NetworkXError as e:
+                    tkm.showerror("Node not in graph", str(e))
+                    return
+                else:
+                    # Break path in B back down into path in G
+                    path2 = []
+                    for a in path[1:-1]: # don't include end points
+                        for n in partitions[a]:
+                            neighbors.add(n)
+            G = graph.subgraph(neighbors)
+
+
+        return G
 
     def _radial_behind(self, home_node, behind_node):
         """Detect what nodes create a radial string behind the edge from

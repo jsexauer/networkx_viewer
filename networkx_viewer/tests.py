@@ -162,6 +162,37 @@ class TestGraphCanvas(unittest.TestCase):
 
         self.check_num_nodes_edges(9, 12)
 
+    def test_plot_three_connected(self):
+        self.a.plot(['a','c','qqqq'])
+        self.check_subgraph()
+
+        # No islands
+        ni = nx.number_connected_components(self.a.dispG)
+        self.assertEqual(ni, 1)
+
+        # Make sure the path that conects the a,c group to qqqq
+        #  is displayed (ie, node 11 and TTTT are in the graph
+        node_11 = self.a._find_disp_node(11)
+        TTTTT = self.a._find_disp_node('TTTTT')
+        self.assertIsNot(node_11, None)
+        self.assertIsNot(TTTTT, None)
+
+        self.check_num_nodes_edges(9, 11)
+
+    def test_plot_three_no_connection(self):
+        self.a.plot(['a','qqqq','alone'])
+
+        # There should be two islands (a-11-TTTTT-qqqq and alone)
+        ni = nx.number_connected_components(self.a.dispG)
+        self.assertEqual(ni, 2)
+
+        # a and qqqq should be connected via 11 and TTTTT
+        self.check_num_nodes_edges(9, 9)
+        node_11 = self.a._find_disp_node(11)
+        TTTTT = self.a._find_disp_node('TTTTT')
+        self.assertIsNot(node_11, None)
+        self.assertIsNot(TTTTT, None)
+
     def test_plot_path_error_no_node(self):
         self.a.clear()
         with patch(SHOWERROR_FUNC) as errorMsgBox:
