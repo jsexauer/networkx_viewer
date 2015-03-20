@@ -742,8 +742,15 @@ class GraphCanvas(tk.Canvas):
 
         # Clear us and rebuild
         self.clear()
+        bad_nodes = set()
         for n, d in G.nodes_iter(data=True):
-            id = self._draw_node((d['x'],d['y']), d['dataG_id'])
+            try:
+                id = self._draw_node((d['x'],d['y']), d['dataG_id'])
+            except KeyError as e:
+                tkm.showerror("Model Error", 
+                "Substation no longer exists: %s" % e)
+                bad_nodes.add(e.message)                
+                continue                
             state = d['token'].__getstate__()
             self.dispG.node[id]['token']._setstate(state)
 
@@ -751,7 +758,14 @@ class GraphCanvas(tk.Canvas):
             # Find dataG ids from old dispG
             uu = G.node[u]['dataG_id']
             vv = G.node[v]['dataG_id']
-            self._draw_edge(uu,vv)
+            if uu in bad_nodes: continue
+            if vv in bad_nodes: continue
+            try:
+                self._draw_edge(uu,vv)
+            except KeyError as e:
+                tkm.showerror("Model Error", 
+                "Model no longer the same around %s" % e)
+                continue
 
             state = d['token'].__getstate__()
             self.dispG.node[id]['token']._setstate(state)
@@ -762,7 +776,11 @@ class GraphCanvas(tk.Canvas):
 
             # Set state for the new edge(s)
             for k, ed in self.dispG.edge[uuu][vvv].items():
-                state = G.edge[u][v][k]['token'].__getstate__()
+                try:
+                    state = G.edge[u][v][k]['token'].__getstate__()
+                except KeyError as e:
+                    tkm.showerror("Model Error", 
+                    "Line different between models: %s" % e)
                 ed['token']._setstate(state)
 
         self.refresh()
