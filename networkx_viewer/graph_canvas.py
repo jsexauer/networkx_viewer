@@ -147,6 +147,13 @@ class GraphCanvas(tk.Canvas):
         else:
             raise NotImplementedError('Data Graph Type not Supported')
 
+        directed = False
+        if isinstance(self.dataG, nx.DiGraph):
+            directed = True
+        if isinstance(self.dataG, nx.MultiDiGraph):
+            directed = True
+
+
         # Figure out edge arc distance multiplier
         if len(edges) == 1:
             m = 0
@@ -167,7 +174,8 @@ class GraphCanvas(tk.Canvas):
             x2,y2 = self._node_center(to_disp)
             xa,ya = self._spline_center(x1,y1,x2,y2,m)
 
-            token.render(host_canvas=self, coords=(x1,y1,xa,ya,x2,y2))
+            token.render(host_canvas=self, coords=(x1,y1,xa,ya,x2,y2),
+                         directed=directed)
 
             if m > 0:
                 m = -m # Flip sides

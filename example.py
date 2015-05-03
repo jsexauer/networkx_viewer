@@ -59,3 +59,15 @@ G.node['d']['label_fill'] = 'red'
 
 app = Viewer(G)
 app.mainloop()
+
+### Example 3 ###
+G = nx.MultiDiGraph()
+G.add_edge('Arg2','Arg1')
+G.add_edge('Arg3','Arg1',0,{'fill':'green', 'arrow':'last'})
+G.add_edge('Arg4','Arg2')
+G.add_edge('Arg5','Arg2')
+G.add_edge('Arg6','Arg3')
+G.node['Arg2']['outline'] = 'blue'
+G.node['Arg1']['label_fill'] = 'red'
+app = Viewer(G)
+app.mainloop()
