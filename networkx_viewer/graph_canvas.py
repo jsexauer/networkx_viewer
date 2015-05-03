@@ -139,19 +139,22 @@ class GraphCanvas(tk.Canvas):
             # just return silently
             return
 
+        directed = False
 
-        if isinstance(self.dataG, nx.MultiGraph):
+        if isinstance(self.dataG, nx.MultiDiGraph):
+            directed = True
+            edges = self.dataG.edge[u][v]
+        elif isinstance(self.dataG, nx.DiGraph):
+            directed = True
+            edges = {0: self.dataG.edge[u][v]}
+        elif isinstance(self.dataG, nx.MultiGraph):
             edges = self.dataG.edge[u][v]
         elif isinstance(self.dataG, nx.Graph):
             edges = {0: self.dataG.edge[u][v]}
         else:
             raise NotImplementedError('Data Graph Type not Supported')
 
-        directed = False
-        if isinstance(self.dataG, nx.DiGraph):
-            directed = True
-        if isinstance(self.dataG, nx.MultiDiGraph):
-            directed = True
+
 
 
         # Figure out edge arc distance multiplier
