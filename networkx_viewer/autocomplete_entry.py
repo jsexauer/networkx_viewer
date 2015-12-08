@@ -1,9 +1,9 @@
 try:
     # Python 3
-    from tkinter import *
+    from tkinter import Entry
 except ImportError:
     # Python 2
-    from Tkinter import *
+    from Tkinter import Entry
 
 import re
 
