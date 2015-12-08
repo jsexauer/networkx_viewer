@@ -112,7 +112,7 @@ class EdgeToken(object):
         self._spline_id = None
         self._host_canvas = None
 
-    def render(self, host_canvas, coords, cfg=None):
+    def render(self, host_canvas, coords, cfg=None, directed=False):
         """Called whenever canvas is about to draw an edge.
         The host_canvas will be the GraphCanvas object.
         coords is a tuple of the following, use to display the spline which
@@ -126,6 +126,10 @@ class EdgeToken(object):
         # Amend config options to include options which must be included
         cfg['tags'] = 'edge'
         cfg['smooth'] = True
+        if directed:
+            # Add arrow
+            cfg['arrow'] = tk.LAST
+            cfg['arrowshape'] = (30,40,5)
         self._spline_id = host_canvas.create_line(*coords, **cfg)
         self._host_canvas = host_canvas
 
