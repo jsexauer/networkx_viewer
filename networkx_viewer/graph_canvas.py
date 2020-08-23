@@ -110,7 +110,7 @@ class GraphCanvas(tk.Canvas):
         self._plot_graph(graph)
 
         # Center the plot on the home node or first node in graph
-        self.center_on_node(home_node or graph.nodes()[0])
+        self.center_on_node(home_node or next(iter(graph.nodes())))
 
         # add bindings for clicking, dragging and releasing over
         # any object with the "node" tammg
@@ -143,14 +143,14 @@ class GraphCanvas(tk.Canvas):
 
         if isinstance(self.dataG, nx.MultiDiGraph):
             directed = True
-            edges = self.dataG.edge[u][v]
+            edges = self.dataG.get_edge_data(u, v)
         elif isinstance(self.dataG, nx.DiGraph):
             directed = True
-            edges = {0: self.dataG.edge[u][v]}
+            edges = {0: self.dataG.edges[u, v]}
         elif isinstance(self.dataG, nx.MultiGraph):
-            edges = self.dataG.edge[u][v]
+            edges = self.dataG.get_edge_data(u, v)
         elif isinstance(self.dataG, nx.Graph):
-            edges = {0: self.dataG.edge[u][v]}
+            edges = {0: self.dataG.edges[u, v]}
         else:
             raise NotImplementedError('Data Graph Type not Supported')
 
@@ -169,10 +169,8 @@ class GraphCanvas(tk.Canvas):
                 dataG_id = (u,v,key)
             elif isinstance(self.dataG, nx.Graph):
                 dataG_id = (u,v)
-            self.dispG.add_edge(frm_disp, to_disp, key, {'dataG_id': dataG_id,
-                                                'dispG_frm': frm_disp,
-                                                'token': token,
-                                                'm': m})
+            self.dispG.add_edge(frm_disp, to_disp, key, dataG_id=dataG_id, dispG_frm=frm_disp, token=token, m=m)
+
             x1,y1 = self._node_center(frm_disp)
             x2,y2 = self._node_center(to_disp)
             xa,ya = self._spline_center(x1,y1,x2,y2,m)
@@ -188,7 +186,7 @@ class GraphCanvas(tk.Canvas):
     def _draw_node(self, coord, data_node):
         """Create a token for the data_node at the given coordinater"""
         (x,y) = coord
-        data = self.dataG.node[data_node]
+        data = self.dataG.nodes[data_node]
 
         # Apply filter to node to make sure we should draw it
         for filter_lambda in self._node_filters:
@@ -206,8 +204,8 @@ class GraphCanvas(tk.Canvas):
         token = self._NodeTokenClass(self, data, data_node)
         id = self.create_window(x, y, window=token, anchor=tk.CENTER,
                                   tags='node')
-        self.dispG.add_node(id, {'dataG_id': data_node,
-                                 'token_id': id, 'token': token})
+        self.dispG.add_node(id, dataG_id=data_node,
+                                 token_id=id, token=token)
         return id
 
     def _get_id(self, event, tag='node'):
@@ -263,7 +261,8 @@ class GraphCanvas(tk.Canvas):
 
             partitions = blocks + non_blocked
 
-            B = nx.blockmodel(graph, partitions)
+            # B = nx.blockmodel(graph, partitions)
+            B = nx.quotient_graph(graph, partitions, relabel=True)
 
             # The resulting graph will has nodes numbered according their index in partitions
             # We want to go through the partitions which are blocks and find the shortest path
@@ -317,11 +316,11 @@ class GraphCanvas(tk.Canvas):
         # Evaluate filter against all currently displayed nodes.  If
         #  any of them do not pass, hide them
         nodes_to_hide = []
-        for n, d in self.dispG.nodes_iter(data=True):
+        for n, d in self.dispG.nodes(data=True):
             dataG_id = d['dataG_id']
             try:
                 show_flag = eval(filter_lambda,
-                             {'u':dataG_id, 'd':self.dataG.node[dataG_id]})
+                             {'u':dataG_id, 'd':self.dataG.nodes[dataG_id]})
             except Exception as e:
                 self._show_filter_error(filter_lambda, e)
                 return False
@@ -383,7 +382,7 @@ class GraphCanvas(tk.Canvas):
             self.move(i, dx, dy)
 
         # Redraw all the edges
-        for to_node, from_node, data in self.dispG.edges_iter(data=True):
+        for to_node, from_node, data in self.dispG.edges(data=True):
             from_xy = self._node_center(from_node)
             to_xy = self._node_center(to_node)
             if data['dispG_frm'] != from_node:
@@ -405,9 +404,9 @@ class GraphCanvas(tk.Canvas):
         self._drag_data["x"] = event.x
         self._drag_data["y"] = event.y
 
-        dataG_id = self.dispG.node[item]['dataG_id']
+        dataG_id = self.dispG.nodes(data=True)[item]['dataG_id']
 
-        self.onNodeSelected(dataG_id, self.dataG.node[dataG_id])
+        self.onNodeSelected(dataG_id, self.dataG.nodes[dataG_id])
 
 
     def onNodeSelected(self, node_name, node_data):
@@ -439,7 +438,7 @@ class GraphCanvas(tk.Canvas):
         # Redraw any edges
         from_node = self._drag_data['item']
         from_xy = self._node_center(from_node)
-        for _, to_node, edge in self.dispG.edges_iter(from_node, data=True):
+        for _, to_node, edge in self.dispG.edges(from_node, data=True):
             to_xy = self._node_center(to_node)
             if edge['dispG_frm'] != from_node:
                 # Flip!
@@ -463,19 +462,19 @@ class GraphCanvas(tk.Canvas):
                               accelerator='H')
 
         hide_behind = tk.Menu(popup, tearoff=0)
-        for _, n in self.dispG.edges_iter(item):
+        for _, n in self.dispG.edges(item):
             assert _ == item
             if self._radial_behind(item, n):
                 state = tk.ACTIVE
             else:
                 state = tk.DISABLED
-            hide_behind.add_command(label=str(self.dispG.node[n]['dataG_id']),
+            hide_behind.add_command(label=str(self.dispG.nodes[n]['dataG_id']),
                   state=state,
                   command=lambda item=item, n=n: self.hide_behind(item, n))
 
         popup.add_cascade(label='Hide Behind', menu=hide_behind)
 
-        token = self.dispG.node[item]['token']
+        token = self.dispG.nodes[item]['token']
         token.customize_menu(popup, item)
 
         try:
@@ -506,7 +505,7 @@ class GraphCanvas(tk.Canvas):
 
     @undoable
     def grow_node(self, disp_node, levels=1):
-        data_node = self.dispG.node[disp_node]['dataG_id']
+        data_node = self.dispG.nodes(data=True)[disp_node]['dataG_id']
 
         grow_graph = self._neighbors(data_node, levels)
 
@@ -525,9 +524,9 @@ class GraphCanvas(tk.Canvas):
 
             if stop_condition is None: return
 
-        data_node = self.dispG.node[disp_node]['dataG_id']
+        data_node = self.dispG.nodes(data=True)[disp_node]['dataG_id']
         existing_data_nodes = set([ v['dataG_id']
-                                    for k,v in self.dispG.node.items() ])
+                                    for k,v in self.dispG.nodes(data=True) ])
 
         max_iters = 10
         stop_node = None    # Node which met stop condition
@@ -546,7 +545,7 @@ class GraphCanvas(tk.Canvas):
                 grow_nodes = existing_data_nodes.copy()
                 continue
             for u in grow_nodes:
-                d = self.dataG.node[u]
+                d = self.dataG.nodes[u]
                 try:
                     stop = eval(stop_condition, {'u':u, 'd':d})
                 except Exception as e:
@@ -575,7 +574,7 @@ class GraphCanvas(tk.Canvas):
     def hide_node(self, disp_node):
 
         # Remove all the edges from display
-        for n, m, d in self.dispG.edges_iter(disp_node, data=True):
+        for n, m, d in self.dispG.edges(disp_node, data=True):
             d['token'].delete()
 
         # Remove the node from display
@@ -589,7 +588,7 @@ class GraphCanvas(tk.Canvas):
     @undoable
     def mark_node(self, disp_node):
         """Mark a display node"""
-        token = self.dispG.node[disp_node]['token']
+        token = self.dispG.nodes(data=True)[disp_node]['token']
         token.mark()
 
     @undoable
@@ -600,7 +599,7 @@ class GraphCanvas(tk.Canvas):
         except ValueError as e:
             tkm.showerror("Unable to find node", str(e))
             return
-        x,y = self.coords(self.dispG.node[disp_node]['token_id'])
+        x,y = self.coords(self.dispG.nodes[disp_node]['token_id'])
 
         # Find center of canvas
         w = self.winfo_width()/2
@@ -618,7 +617,7 @@ class GraphCanvas(tk.Canvas):
 
     def onEdgeRightClick(self, event):
         item = self._get_id(event, 'edge')
-        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
+        for u,v,k,d in self.dispG.edges(keys=True, data=True):
             if d['token'].id == item:
                 break
 
@@ -633,10 +632,10 @@ class GraphCanvas(tk.Canvas):
 
     def onEdgeClick(self, event):
         item = self._get_id(event, 'edge')
-        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
+        for u,v,k,d in self.dispG.edges(keys=True, data=True):
             if d['token'].id == item:
                 break
-        dataG_id = self.dispG.edge[u][v][k]['dataG_id']
+        dataG_id = self.dispG.edges[u, v, k]['dataG_id']
         self.onEdgeSelected(dataG_id, self.dataG.get_edge_data(*dataG_id))
 
     def onEdgeSelected(self, edge_name, edge_data):
@@ -648,7 +647,7 @@ class GraphCanvas(tk.Canvas):
         #  don't like it as it's decieving to have both nodes on the display
         #  but not be showing an edge between them
         raise NotImplementedError()
-        for u, v, d in self.dispG.edges_iter(data=True):
+        for u, v, d in self.dispG.edges(data=True):
             if d['token_id']==edge_id:
                 self.dispG.remove_edge(u,v)
                 break
@@ -688,7 +687,7 @@ class GraphCanvas(tk.Canvas):
         new_nodes = home_nodes.union(new_nodes)
 
         displayed_data_nodes = set([ v['dataG_id']
-                            for k,v in self.dispG.node.items() ])
+                            for k,v in self.dispG.nodes.items() ])
 
         # It is possible the new nodes create a connection with the existing
         #  nodes; in such a case, we don't need to try to find the shortest
@@ -724,7 +723,7 @@ class GraphCanvas(tk.Canvas):
                     #  the path to the new_nodes set
                     # Don't include end points because they are the two islands
                     for u in path[1:-1]:
-                        Gu = B.node[u]['graph'].nodes()
+                        Gu = B.nodes[u]['graph'].nodes()
                         assert len(Gu) == 1; Gu = Gu[0]
                         new_nodes.add(Gu)
 
@@ -738,7 +737,7 @@ class GraphCanvas(tk.Canvas):
         ans = self.dispG.copy()
 
         # Add current x,y info to the graph
-        for n, d in ans.nodes_iter(data=True):
+        for n, d in ans.nodes(data=True):
             (d['x'],d['y']) = self.coords(d['token_id'])
 
         # Pickle the whole thing up
@@ -754,43 +753,43 @@ class GraphCanvas(tk.Canvas):
         # Clear us and rebuild
         self.clear()
         bad_nodes = set()
-        for n, d in G.nodes_iter(data=True):
+        for n, d in G.nodes(data=True):
             try:
                 id = self._draw_node((d['x'],d['y']), d['dataG_id'])
             except KeyError as e:
-                tkm.showerror("Model Error", 
+                tkm.showerror("Model Error",
                 "Substation no longer exists: %s" % e)
-                bad_nodes.add(e.message)                
-                continue                
+                bad_nodes.add(e.message)
+                continue
             state = d['token'].__getstate__()
-            self.dispG.node[id]['token']._setstate(state)
+            self.dispG.nodes[id]['token']._setstate(state)
 
-        for u, v in set(G.edges_iter()):
+        for u, v in set(G.edges()):
             # Find dataG ids from old dispG
-            uu = G.node[u]['dataG_id']
-            vv = G.node[v]['dataG_id']
+            uu = G.nodes[u]['dataG_id']
+            vv = G.nodes[v]['dataG_id']
             if uu in bad_nodes: continue
             if vv in bad_nodes: continue
             try:
                 self._draw_edge(uu,vv)
             except KeyError as e:
-                tkm.showerror("Model Error", 
+                tkm.showerror("Model Error",
                 "Model no longer the same around %s" % e)
                 continue
 
             state = d['token'].__getstate__()
-            self.dispG.node[id]['token']._setstate(state)
+            self.dispG.nodes[id]['token']._setstate(state)
 
             # Find new dispG ids from dataG ids
             uuu = self._find_disp_node(uu)
             vvv = self._find_disp_node(vv)
 
             # Set state for the new edge(s)
-            for k, ed in self.dispG.edge[uuu][vvv].items():
+            for k, ed in self.dispG.get_edge_data(uuu, vvv):
                 try:
-                    state = G.edge[u][v][k]['token'].__getstate__()
+                    state = G.edge[u, v, k]['token'].__getstate__()
                 except KeyError as e:
-                    tkm.showerror("Model Error", 
+                    tkm.showerror("Model Error",
                     "Line different between models: %s" % e)
                 ed['token']._setstate(state)
 
@@ -817,14 +816,14 @@ class GraphCanvas(tk.Canvas):
     @undoable
     def replot(self):
         """Replot existing nodes, hopefully providing a better layout"""
-        nodes = [d['dataG_id'] for n, d in self.dispG.nodes_iter(data=True)]
+        nodes = [d['dataG_id'] for n, d in self.dispG.nodes(data=True)]
 
         # Remember which nodes and edges were marked
         nodes_marked = [d['dataG_id']
-                        for n, d in self.dispG.nodes_iter(data=True)
+                        for n, d in self.dispG.nodes(data=True)
                         if d['token'].is_marked]
         edges_marked = [d['dataG_id']
-                        for u,v,k,d in self.dispG.edges_iter(data=True, keys=True)
+                        for u,v,k,d in self.dispG.edges(data=True, keys=True)
                         if d['token'].is_marked]
         # Replot
         self.plot(nodes, levels=0)
@@ -833,7 +832,7 @@ class GraphCanvas(tk.Canvas):
         for n in nodes_marked:
             self.mark_node(self._find_disp_node(n))
         edge_map = {d['dataG_id']: (u,v,k)
-                    for u,v,k,d in self.dispG.edges_iter(data=True, keys=True)}
+                    for u,v,k,d in self.dispG.edges(data=True, keys=True)}
         for dataG_id in edges_marked:
             self.mark_edge(*edge_map[dataG_id])
 
@@ -843,17 +842,17 @@ class GraphCanvas(tk.Canvas):
         This method should be called anytime the underling data graph changes"""
 
         # Edges
-        for u,v,k,d in self.dispG.edges_iter(keys=True, data=True):
+        for u,v,k,d in self.dispG.edges(keys=True, data=True):
             token = d['token']
             dataG_id = d['dataG_id']
             token.edge_data = self.dataG.get_edge_data(*dataG_id)
             token.itemconfig()  # Refreshed edge's display
 
         # Nodes
-        for u, d in self.dispG.nodes_iter(data=True):
+        for u, d in self.dispG.nodes(data=True):
             token = d['token']
             node_name = d['dataG_id']
-            data = self.dataG.node[node_name]
+            data = self.dataG.nodes[node_name]
             token.render(data, node_name)
 
         # Update fully expanded status
@@ -885,7 +884,7 @@ class GraphCanvas(tk.Canvas):
             for u, v in zip(path[:-1], path[1:]):
                 u_disp = self._find_disp_node(u)
                 v_disp = self._find_disp_node(v)
-                for key, value in self.dispG.edge[u_disp][v_disp].items():
+                for key, value in self.dispG.get_edge_data(u_disp, v_disp):
                     self.mark_edge(u_disp, v_disp, key)
 
 
@@ -925,27 +924,30 @@ class GraphCanvas(tk.Canvas):
         # capture their edges.  To do this, we should subgraph the data graph
         # using the nodes of the grow graph and existing data nodes
         existing_data_nodes = set([ v['dataG_id']
-                            for k,v in self.dispG.node.items() ])
+                            for k,v in self.dispG.nodes.items() ])
         nodes = set(nodes).union(existing_data_nodes)
         grow_graph = self.dataG.subgraph(nodes)
 
         # Build layout considering existing nodes and
         #  argument to center around the home node (ie, "disp_node")
         fixed = {}
-        for n,d in self.dispG.nodes_iter(data=True):
+        for n,d in self.dispG.nodes(data=True):
             fixed[d['dataG_id']] = self.coords(n)
 
         layout = self.create_layout(grow_graph,
                                     pos=fixed, fixed=list(fixed.keys()))
 
+        # Unfreeze graph
+        grow_graph = type(grow_graph)(grow_graph)
+
         # Filter the graph to only include new edges
-        for n,m in grow_graph.copy().edges_iter():
+        for n,m in grow_graph.copy().edges():
             if (n in existing_data_nodes) and (m in existing_data_nodes):
                 grow_graph.remove_edge(n,m)
 
         # Remove any nodes which connected to only existing nodes (ie, they
         #  they connect to nothing else in grow_graph)
-        for n, degree in grow_graph.copy().degree_iter():
+        for n, degree in grow_graph.copy().degree():
             if degree == 0:
                 grow_graph.remove_node(n)
 
@@ -974,7 +976,7 @@ class GraphCanvas(tk.Canvas):
         the display graph.  Used to propagate completeness indicators
         down to the node's tokens"""
 
-        for n, d in self.dispG.nodes_iter(data=True):
+        for n, d in self.dispG.nodes(data=True):
             token = d['token']
             if self.dispG.degree(n) == self.dataG.degree(d['dataG_id']):
                 token.mark_complete()
@@ -984,12 +986,12 @@ class GraphCanvas(tk.Canvas):
 
     def _find_disp_node(self, data_node):
         """Given a node's name in self.dataG, find in self.dispG"""
-        disp_node = [a for a, d in self.dispG.nodes_iter(data=True)
+        disp_node = [a for a, d in self.dispG.nodes(data=True)
                     if d['dataG_id'] == data_node]
         if len(disp_node) == 0 and str(data_node).isdigit():
             # Try again, this time using the int version
             data_node = int(data_node)
-            disp_node = [a for a, d in self.dispG.nodes_iter(data=True)
+            disp_node = [a for a, d in self.dispG.nodes(data=True)
                     if d['dataG_id'] == data_node]
 
         if len(disp_node) == 0:
@@ -999,7 +1001,7 @@ class GraphCanvas(tk.Canvas):
             for f in self._node_filters:
                 try:
                     show_flag = eval(f, {'u':data_node,
-                                         'd':self.dataG.node[data_node]})
+                                         'd':self.dataG.nodes[data_node]})
                 except Exception as e:
                     # Usually we we would alert user that eval failed, but
                     #  in this case, we're doing this without their knowlage
@@ -1112,7 +1114,7 @@ class GraphCanvas(tk.Canvas):
 
         if fixed is None:
             # Only rescale non fixed layouts
-            pos= nx.layout._rescale_layout(pos,scale=scale)
+            pos= nx.layout.rescale_layout(pos,scale=scale)
 
         if min_distance and fixed is None:
             # Find min distance between any two nodes and scale such that
@@ -1132,7 +1134,7 @@ class GraphCanvas(tk.Canvas):
                 # calculate scaling factor and rescale
                 rescale = (min_distance / cur_min_dist) * pos.max()
 
-                pos = nx.layout._rescale_layout(pos, scale=rescale)
+                pos = nx.layout.rescale_layout(pos, scale=rescale)
 
         return dict(zip(G,pos))
 
@@ -1153,7 +1155,7 @@ class GraphCanvas(tk.Canvas):
 
         A=np.asarray(A) # make sure we have an array instead of a matrix
 
-        if pos==None:
+        if pos is None:
             # random initial positions
             pos=np.asarray(np.random.random((nnodes,dim)),dtype=A.dtype)
         else:
@@ -1214,12 +1216,3 @@ def flatten(l):
                 yield sub
         else:
             yield el
-
-
-
-
-
-
-
-
-

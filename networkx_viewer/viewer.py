@@ -139,13 +139,13 @@ class ViewerApp(tk.Tk):
         self.canvas.center_on_node(node)
 
     def reset_edge_markings(self):
-        for u,v,k,d in self.canvas.dispG.edges_iter(data=True, keys=True):
+        for u,v,k,d in self.canvas.dispG.edges(data=True, keys=True):
             token = d['token']
             if token.is_marked:
                 self.canvas.mark_edge(u,v,k)
 
     def reset_node_markings(self):
-        for u,d in self.canvas.dispG.nodes_iter(data=True):
+        for u,d in self.canvas.dispG.nodes(data=True):
             token = d['token']
             if token.is_marked:
                 self.canvas.mark_node(u)
@@ -204,7 +204,7 @@ class ViewerApp(tk.Tk):
 
     def grow_all(self):
         """Grow all visible nodes one level"""
-        for u, d in self.canvas.dispG.node.copy().items():
+        for u, d in self.canvas.dispG.copy().nodes.items():
             if not d['token'].is_complete:
                 self.canvas.grow_node(u)
 
@@ -414,7 +414,7 @@ class NodeDialog(tk.Toplevel):
         tk.Label(self, text=msg).grid(row=0, column=0, columnspan=2,
                                       sticky='NESW',padx=5,pady=5)
         self.posibilities = [d['dataG_id'] for n,d in
-                    main_window.canvas.dispG.nodes_iter(data=True)]
+                    main_window.canvas.dispG.nodes(data=True)]
         self.entry = AutocompleteEntry(self.posibilities, self)
         self.entry.bind('<Return>', lambda e: self.destroy(), add='+')
         self.entry.grid(row=1, column=0, columnspan=2, sticky='NESW',padx=5,pady=5)

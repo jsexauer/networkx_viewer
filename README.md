@@ -1,5 +1,7 @@
-NetworkX Viewer
+NetworkX Viewer - NetworkX Version 2
 ================
+
+This branch is created to implement NetworkX Viewer for NetworkX version 2.
 
 [![Build Status](https://travis-ci.org/jsexauer/networkx_viewer.svg?branch=master)](https://travis-ci.org/jsexauer/networkx_viewer)
 
