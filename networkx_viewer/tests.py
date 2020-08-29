@@ -46,12 +46,12 @@ class TestGraphCanvas(unittest.TestCase):
     def check_subgraph(self):
         """Verify that display graph is a subgraph of input"""
         dispG = self.a.dispG
-        displayed_nodes = [d['dataG_id'] for n,d in dispG.nodes_iter(data=True)]
+        displayed_nodes = [d['dataG_id'] for n,d in dispG.nodes(data=True)]
         subdataG = self.input_G.subgraph(displayed_nodes)
 
         self.assertEqual(len(dispG), len(subdataG))
 
-        for disp_node, data in dispG.nodes_iter(data=True):
+        for disp_node, data in dispG.nodes(data=True):
             data_node = data['dataG_id']
             # Make sure we're displaying all edges for all displayed nodes
             disp_deg = dispG.degree(disp_node)
@@ -83,7 +83,7 @@ class TestGraphCanvas(unittest.TestCase):
     def test_full_graph(self):
         self.check_subgraph()
 
-        for disp_node, disp_data in self.a.dispG.nodes_iter(data=True):
+        for disp_node, disp_data in self.a.dispG.nodes(data=True):
             token = disp_data['token']
             self.assertEqual(token.is_complete, True)
 
@@ -211,7 +211,7 @@ class TestGraphCanvas(unittest.TestCase):
 
     def test_mark_node(self):
         a = self.a._find_disp_node('a')
-        token = self.a.dispG.node[a]['token']
+        token = self.a.dispG.nodes[a]['token']
         self.a.mark_node(a)
         self.assertEqual(token._marked, True)
         self.assertEqual(token['background'], 'yellow')
@@ -225,15 +225,15 @@ class TestGraphCanvas(unittest.TestCase):
         c = self.a._find_disp_node('c')
         out = self.a._find_disp_node('out')
 
-        token = self.a.dispG.edge[c][out][0]['token']
+        token = self.a.dispG.get_edge_data(c, out, 0)['token']
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
+        cfg = self.a.itemconfig(self.a.dispG.get_edge_data(c, out, 0)['token'].id)
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
+        cfg = self.a.itemconfig(self.a.dispG.get_edge_data(c, out, 0)['token'].id)
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '1.0')
 
@@ -295,9 +295,9 @@ class TestGraphCanvas(unittest.TestCase):
         out = self.a._find_disp_node('out')
 
         # Mark edge c-out and node out
-        c_token = self.a.dispG.node[c]['token']
-        out_token = self.a.dispG.node[out]['token']
-        edge_token = self.a.dispG.edge[c][out][0]['token']
+        c_token = self.a.dispG.nodes[c]['token']
+        out_token = self.a.dispG.nodes[out]['token']
+        edge_token = self.a.dispG.get_edge_data(c, out, 0)['token']
         self.a.mark_edge(c, out, 0)
         self.a.mark_node(out)
         self.assertEqual(edge_token.is_marked, True)
@@ -313,9 +313,9 @@ class TestGraphCanvas(unittest.TestCase):
         # Ensure markings still hold
         c = self.a._find_disp_node('c')
         out = self.a._find_disp_node('out')
-        c_token = self.a.dispG.node[c]['token']
-        out_token = self.a.dispG.node[out]['token']
-        edge_token = self.a.dispG.edge[c][out][0]['token']
+        c_token = self.a.dispG.nodes[c]['token']
+        out_token = self.a.dispG.nodes[out]['token']
+        edge_token = self.a.dispG.get_edge_data(c, out, 0)['token']
         self.assertEqual(edge_token.is_marked, True)
         self.assertEqual(c_token.is_marked, False)
         self.assertEqual(out_token.is_marked, True)
@@ -328,8 +328,8 @@ class TestGraphCanvasFiltered(TestGraphCanvas):
         # evaluates to True when we we will filter by them
         G = self.a.dataG
 
-        for n in G.nodes_iter():
-            G.node[n]['real'] = True
+        for n in G.nodes():
+            G.nodes[n]['real'] = True
 
         # Now we're going to add a couple of "fake" nodes; IE, nodes
         #  that should be not be displayed because they are not in the filter.
@@ -352,7 +352,7 @@ class TestGraphCanvasFiltered(TestGraphCanvas):
         # complete
         self.check_subgraph()
 
-        for disp_node, disp_data in self.a.dispG.nodes_iter(data=True):
+        for disp_node, disp_data in self.a.dispG.nodes(data=True):
             token = disp_data['token']
             dataG_id = disp_data['dataG_id']
             if dataG_id in ('out','a','qqqq'):
@@ -410,14 +410,13 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         super(TestGraphCanvasTkPassthrough, self).setUp()
 
         # Add some attributes to the dictionary to pass through to tk
-        G = self.input_G.copy()
-        G.node['a']['fill'] = 'white'
-        G.node['a']['dash'] = (2,2)
-        G.node[2]['label_fill'] = 'blue'
-        G.node[2]['label_text'] = 'LOOOOOONG'
-        G.edge['a']['c']['dash'] = (2,2)
-        G.edge['out']['c']['fill'] = 'red'
-        G.edge['out']['c']['width'] = 3
+        G: nx.Graph = self.input_G.copy()
+        G.nodes['a']['fill'] = 'white'
+        G.nodes['a']['dash'] = (2,2)
+        G.nodes[2]['label_fill'] = 'blue'
+        G.nodes[2]['label_text'] = 'LOOOOOONG'
+        G.get_edge_data('a', 'c').update({'dash': (2,2)})
+        G.get_edge_data('out', 'c').update({'fill': 'red', 'width': 3})
 
         self.input_G = G.copy()
 
@@ -437,22 +436,22 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         c = self.a._find_disp_node('c')
         out = self.a._find_disp_node('out')
 
-        token = self.a.dispG.edge[c][out][0]['token']
+        token = self.a.dispG.get_edge_data(c, out, 0)['token']
 
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
+        cfg = self.a.itemconfig(self.a.dispG.get_edge_data(c, out, 0)['token'].id)
         self.assertEqual(token._marked, True)
         self.assertEqual(cfg['width'][-1], '4.0')
 
         # Unmark
         self.a.mark_edge(c, out, 0)
-        cfg = self.a.itemconfig(self.a.dispG.edge[c][out][0]['token'].id)
+        cfg = self.a.itemconfig(self.a.dispG.get_edge_data(c, out, 0)['token'].id)
         self.assertEqual(token._marked, False)
         self.assertEqual(cfg['width'][-1], '3.0')
 
     def test_node_passthrough(self):
         node = self.a._find_disp_node('a')
-        token = self.a.dispG.node[node]['token']
+        token = self.a.dispG.nodes[node]['token']
         cfg = token.itemconfig(token.marker)
 
         self.assertEqual(cfg['fill'][-1], 'white')
@@ -461,7 +460,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
 
     def test_node_label_passthrough(self):
         node = self.a._find_disp_node(2)
-        token = self.a.dispG.node[node]['token']
+        token = self.a.dispG.nodes[node]['token']
         cfg = token.itemconfig(token.label)
 
         self.assertEqual(cfg['fill'][-1], 'blue')
@@ -473,7 +472,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         out = self.a._find_disp_node('out')
 
         # Test edge a-c
-        token = self.a.dispG.edge[a][c][0]['token']
+        token = self.a.dispG.get_edge_data(a, c, 0)['token']
         token_id = token.id
         cfg = self.a.itemconfig(token_id)
 
@@ -481,7 +480,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         self.assert_(chk)
 
         # Test edge out-c
-        token = self.a.dispG.edge[out][c][0]['token']
+        token = self.a.dispG.get_edge_data(out, c, 0)['token']
         token_id = token.id
         cfg = self.a.itemconfig(token_id)
 
@@ -493,10 +492,10 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         #  dataG and call refresh, the changes propagate
 
         # Make edge a-c magenta
-        self.a.dataG.edge['a']['c']['fill'] = 'magenta'
+        self.a.dataG.get_edge_data('a', 'c')['fill'] = 'magenta'
 
         # Make node a magenta
-        self.a.dataG.node['a']['fill'] = 'magenta'
+        self.a.dataG.nodes['a']['fill'] = 'magenta'
 
         self.a.refresh()
 
@@ -504,11 +503,11 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         a = self.a._find_disp_node('a')
         c = self.a._find_disp_node('c')
 
-        token_id = self.a.dispG.edge[a][c][0]['token'].id
+        token_id = self.a.dispG.get_edge_data(a, c, 0)['token'].id
         cfg = self.a.itemconfig(token_id)
         self.assertEqual(cfg['fill'][-1], 'magenta')
 
-        token = self.a.dispG.node[a]['token']
+        token = self.a.dispG.nodes[a]['token']
         cfg = token.itemconfig(token.marker)
         self.assertEqual(cfg['fill'][-1], 'magenta')
 

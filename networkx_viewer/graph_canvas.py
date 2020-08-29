@@ -708,7 +708,8 @@ class GraphCanvas(tk.Canvas):
             singleton_nodes = map(lambda x: [x], singleton_nodes)
             partitions = [displayed_data_nodes, new_nodes] + \
                          list(singleton_nodes)
-            B = nx.blockmodel(self.dataG, partitions, multigraph=True)
+            #B = nx.blockmodel(self.dataG, partitions, multigraph=True)
+            B = nx.quotient_graph(self.dataG, partitions, relabel=True)
 
             # Find shortest path between existing display (node 0) and
             #  new display island (node 1)
@@ -726,7 +727,7 @@ class GraphCanvas(tk.Canvas):
                     # Don't include end points because they are the two islands
                     for u in path[1:-1]:
                         Gu = B.nodes[u]['graph'].nodes()
-                        assert len(Gu) == 1; Gu = Gu[0]
+                        assert len(Gu) == 1; Gu = list(Gu)[0]
                         new_nodes.add(Gu)
 
         # Plot the new nodes
@@ -869,6 +870,9 @@ class GraphCanvas(tk.Canvas):
         except nx.NetworkXNoPath as e:
             tkm.showerror("No path", str(e))
             return
+        except nx.NodeNotFound as e:
+            tkm.showerror("No path", str(e))
+            return
         except nx.NetworkXError as e:
             tkm.showerror("Node not in graph", str(e))
             return
@@ -886,7 +890,7 @@ class GraphCanvas(tk.Canvas):
             for u, v in zip(path[:-1], path[1:]):
                 u_disp = self._find_disp_node(u)
                 v_disp = self._find_disp_node(v)
-                for key, value in self.dispG.get_edge_data(u_disp, v_disp):
+                for key, value in self.dispG.get_edge_data(u_disp, v_disp).items():
                     self.mark_edge(u_disp, v_disp, key)
 
 
@@ -907,7 +911,7 @@ class GraphCanvas(tk.Canvas):
             for n in graph.nodes():
                 self._draw_node(layout[n]+20, n)
         else:
-            self._draw_node((scale/2, scale/2), graph.nodes()[0])
+            self._draw_node((scale/2, scale/2), list(graph.nodes())[0])
 
         # Create edges
         for frm, to in set(graph.edges()):
