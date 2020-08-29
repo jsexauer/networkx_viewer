@@ -788,9 +788,9 @@ class GraphCanvas(tk.Canvas):
             vvv = self._find_disp_node(vv)
 
             # Set state for the new edge(s)
-            for k, ed in self.dispG.get_edge_data(uuu, vvv):
+            for k, ed in self.dispG.get_edge_data(uuu, vvv).items():
                 try:
-                    state = G.edge[u, v, k]['token'].__getstate__()
+                    state = G.edges[u, v, k]['token'].__getstate__()
                 except KeyError as e:
                     tkm.showerror("Model Error",
                     "Line different between models: %s" % e)
