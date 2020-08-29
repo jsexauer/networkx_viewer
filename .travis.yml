@@ -5,14 +5,6 @@ matrix:
  fast_finish: true
  include:
   - python: "3.5"
-    env: NETWORKX_VERSION=networkx==2.1
-  - python: "3.6"
-    env: NETWORKX_VERSION=networkx==2.1
-  - python: "3.7"
-    env: NETWORKX_VERSION=networkx==2.1
-  - python: "3.8"
-    env: NETWORKX_VERSION=networkx==2.1
-  - python: "3.5"
     env: NETWORKX_VERSION=networkx==2.2
   - python: "3.6"
     env: NETWORKX_VERSION=networkx==2.2

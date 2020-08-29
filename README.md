@@ -1,7 +1,5 @@
-NetworkX Viewer - NetworkX Version 2
+NetworkX Viewer
 ================
-
-This branch is created to implement NetworkX Viewer for NetworkX version 2.
 
 [![Build Status](https://travis-ci.org/jsexauer/networkx_viewer.svg?branch=master)](https://travis-ci.org/jsexauer/networkx_viewer)
 
@@ -37,11 +35,11 @@ from networkx_viewer import Viewer
 G = nx.MultiGraph()
 G.add_edge('a','b')
 G.add_edge('b','c')
-G.add_edge('c','a',0,{'fill':'green'})
+G.add_edge('c','a',0, fill='green')
 G.add_edge('c','d')
-G.add_edge('c','d',1,{'dash':(2,2)})
-G.node['a']['outline'] = 'blue'
-G.node['d']['label_fill'] = 'red'
+G.add_edge('c','d',1, dash=(2,2))
+G.nodes['a']['outline'] = 'blue'
+G.nodes['d']['label_fill'] = 'red'
 
 app = Viewer(G)
 app.mainloop()
@@ -60,7 +58,7 @@ following.
 pip install networkx_viewer
 ```
 
-NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 1.4 or greater.
+NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 2.2 or greater.
 
 
 Using the GUI
@@ -179,7 +177,7 @@ or `EdgeToken` and pass as an argument into the GraphCanvas as such.  For
 example:
 
 ```python
-import Tkinter as tk
+import tkinter as tk
 import networkx as nx
 from networkx_viewer import NodeToken, GraphCanvas
 
@@ -218,8 +216,8 @@ class ExampleApp(tk.Tk):
         self.canvas.grid(row=0, column=0, sticky='NESW')
 
 G = nx.path_graph(5)
-G.node[2]['circle'] = True
-G.node[3]['color'] = 'blue'
+G.nodes[2]['circle'] = True
+G.nodes[3]['color'] = 'blue'
 
 app = ExampleApp(G)
 app.mainloop()
@@ -228,7 +226,11 @@ app.mainloop()
 
 Development Status
 ==================
-As of September 2014, networkx_viewer is under active development.  Bugs or feature
+As of August 2020, networkx_viewer is under considered feature complete.  No
+  additional development is expected. Bugs or feature
 requests should be submitted to the
 [github issue tracker](https://github.com/jsexauer/networkx_viewer/issues).
+
+Many thanks to [Faith Eser](https://github.com/afeser) for doing the majority of the 
+development work to make this library work with networkx version 2.2+.
 

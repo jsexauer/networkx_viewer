@@ -59,8 +59,9 @@ setup(name='networkx_viewer',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=False,
-      setup_requires=['networkx>=1.4'],
+      setup_requires=['networkx>=2.2'],
       install_requires=[
-          'networkx>=1.4'
+          'networkx>=2.2'
       ],
+      python_requires='>3.5'
       )
