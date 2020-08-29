@@ -273,6 +273,8 @@ class GraphCanvas(tk.Canvas):
                     path = nx.shortest_path(B, frm_node, to_node)
                 except nx.NetworkXNoPath as e:
                     pass # In an island, which is permissible
+                except nx.NodeNotFound as e2:
+                    pass # Node reduced away, which is permissible
                 except nx.NetworkXError as e:
                     tkm.showerror("Node not in graph", str(e))
                     return
