@@ -226,7 +226,7 @@ app.mainloop()
 
 Development Status
 ==================
-As of August 2020, networkx_viewer is under considered feature complete.  No
+As of August 2020, networkx_viewer is considered feature complete.  No
   additional development is expected. Bugs or feature
 requests should be submitted to the
 [github issue tracker](https://github.com/jsexauer/networkx_viewer/issues).

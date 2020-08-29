@@ -4,6 +4,11 @@ import sys, os
 # python setup.py check
 # python.exe setup.py --long-description | rst2html.py > dummy.html
 
+# To upload to pypi
+#  python setup.py sdist bdist_wheel
+#  python -m twine upload dist/*
+
+# LEGACY:
 # To upload to PyPI test server
 #   http://peterdowns.com/posts/first-time-with-pypi.html
 # python setup.py register -r pypitest
