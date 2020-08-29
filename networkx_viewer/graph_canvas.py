@@ -606,7 +606,7 @@ class GraphCanvas(tk.Canvas):
         # Find center of canvas
         w = self.winfo_width()/2
         h = self.winfo_height()/2
-        if w == 0:
+        if w < 1:
             # We haven't been drawn yet
             w = int(self['width'])/2
             h = int(self['height'])/2
