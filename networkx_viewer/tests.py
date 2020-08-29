@@ -410,7 +410,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         super(TestGraphCanvasTkPassthrough, self).setUp()
 
         # Add some attributes to the dictionary to pass through to tk
-        G: nx.Graph = self.input_G.copy()
+        G = self.input_G.copy()
         G.nodes['a']['fill'] = 'white'
         G.nodes['a']['dash'] = (2,2)
         G.nodes[2]['label_fill'] = 'blue'
