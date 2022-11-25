@@ -1217,7 +1217,7 @@ def flatten(l):
         # Py3k
         bs = str
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, bs):
+        if isinstance(el, collections.abc.Iterable) and not isinstance(el, bs):
             for sub in flatten(el):
                 yield sub
         else:
