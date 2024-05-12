@@ -1106,7 +1106,7 @@ class GraphCanvas(tk.Canvas):
         if len(G)==1:
             return {G.nodes()[0]:(1,)*dim}
 
-        A=nx.to_numpy_matrix(G)
+        A=nx.adjacency_matrix(G).todense()
         nnodes,_ = A.shape
         # I've found you want to occupy about a two-thirds of the window size
         if fixed is not None:
@@ -1163,7 +1163,7 @@ class GraphCanvas(tk.Canvas):
 
         if pos is None:
             # random initial positions
-            pos=np.asarray(np.random.random((nnodes,dim)),dtype=A.dtype)
+            pos=np.asarray(np.random.random((nnodes,dim)),dtype='float64')
         else:
             # make sure positions are of same type as matrix
             pos=pos.astype(A.dtype)
@@ -1201,6 +1201,7 @@ class GraphCanvas(tk.Canvas):
             if fixed is not None:
                 # don't change positions of fixed nodes
                 delta_pos[fixed]=0.0
+
             pos+=delta_pos
             # cool temperature
             t-=dt
