@@ -31,4 +31,4 @@ jobs:
         python setup.py install
     - name: Runt tests
       run: |
-        python ./networkx_viewer/tests.py
+        xvfb-run --auto-servernum --server-args="-screen 0 1024x768x24" python ./networkx_viewer/tests.py
