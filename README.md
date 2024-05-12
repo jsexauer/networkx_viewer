@@ -58,7 +58,7 @@ following.
 pip install networkx_viewer
 ```
 
-NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 2.2 or greater.
+NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 3.2 or greater.
 
 
 Using the GUI
@@ -226,11 +226,12 @@ app.mainloop()
 
 Development Status
 ==================
-As of August 2020, networkx_viewer is considered feature complete.  No
+As of May 2024, networkx_viewer is considered feature complete.  No
   additional development is expected. Bugs or feature
 requests should be submitted to the
 [github issue tracker](https://github.com/jsexauer/networkx_viewer/issues).
 
 Many thanks to [Faith Eser](https://github.com/afeser) for doing the majority of the 
-development work to make this library work with networkx version 2.2+.
+development work to make this library work with networkx version 2.2+ and 
+[Phillip Feldman](https://github.com/PhillipFeldman) for networkx version 3.3+.
 
