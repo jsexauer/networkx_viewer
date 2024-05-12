@@ -1,6 +1,17 @@
 import networkx as nx
 from networkx_viewer import Viewer
 
+
+### Bug report ###
+G = nx.DiGraph()
+edges = [('paper_9912286', 'paper_9806074'), ('paper_9912286', 'paper_9810068'), ('paper_9912286', 'paper_9901023'), ('paper_9912286', 'paper_9808140'), ('paper_1001', 'paper_9308122'), ('paper_1001', 'paper_9304045'), ('paper_1001', 'paper_9912286')]
+for e in edges:
+    G.add_edge(*e)
+app = Viewer(G)
+app.mainloop()
+
+
+
 ### Example 1 ####
 G = nx.MultiGraph()
 G.add_edge('a',2)
