@@ -456,7 +456,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
 
         self.assertEqual(cfg['fill'][-1], 'white')
         chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
-        self.assert_(chk)
+        self.assertTrue(chk)
 
     def test_node_label_passthrough(self):
         node = self.a._find_disp_node(2)
@@ -477,7 +477,7 @@ class TestGraphCanvasTkPassthrough(TestGraphCanvas):
         cfg = self.a.itemconfig(token_id)
 
         chk = (cfg['dash'][-1] == ('2','2')) or (cfg['dash'][-1] == ('2 2'))
-        self.assert_(chk)
+        self.assertTrue(chk)
 
         # Test edge out-c
         token = self.a.dispG.get_edge_data(out, c, 0)['token']
