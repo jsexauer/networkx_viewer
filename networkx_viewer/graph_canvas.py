@@ -1166,7 +1166,7 @@ class GraphCanvas(tk.Canvas):
             pos=np.asarray(np.random.random((nnodes,dim)),dtype='float64')
         else:
             # make sure positions are of same type as matrix
-            pos=pos.astype(A.dtype)
+            pos=pos.astype('float64')
 
         # optimal distance between nodes
         if k is None:
