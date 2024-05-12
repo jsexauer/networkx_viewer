@@ -30,7 +30,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install mock numpy scipy
-        pip install networkx==NETWORKX_VERSION
+        pip install networkx==$NETWORKX_VERSION
         python setup.py install
     - name: Runt tests
       run: |
@@ -50,7 +50,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install mock numpy scipy
-        pip install networkx==NETWORKX_VERSION
+        pip install networkx==$NETWORKX_VERSION
         python setup.py install
     - name: Runt tests
       run: |
