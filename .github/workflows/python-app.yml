@@ -28,6 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install mock
         pip install networkx==3.3
+        python setup.py install
     - name: Runt tests
       run: |
         python ./networkx_viewer/tests.py
