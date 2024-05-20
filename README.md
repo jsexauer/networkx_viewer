@@ -54,7 +54,7 @@ Installation
 NetworkX Viewer is hosted on PyPI and can be installed by simply doing the
 following.
 ```
-pip install networkx_viewer
+pip install networkx-viewer
 ```
 
 NetworkX Viewer requires [NetworkX](https://networkx.github.io/) version 3.2 or greater.
